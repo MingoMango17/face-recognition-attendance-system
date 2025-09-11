@@ -1,9 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Camera, User, Clock, CheckCircle, AlertCircle, Settings } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Camera,
+  User,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Settings,
+} from "lucide-react";
 
 // Type definitions
 interface AttendanceStatus {
-  type: 'success' | 'error';
+  type: "success" | "error";
   message: string;
 }
 
@@ -28,7 +35,7 @@ interface TodaysSummary {
   checkIn: string | null;
   checkOut: string | null;
   totalTime: string;
-  status: 'On Time' | 'Late' | 'Early' | '--';
+  status: "On Time" | "Late" | "Early" | "--";
 }
 
 // Component props type (if this component receives props)
@@ -37,18 +44,19 @@ interface FacialRecognitionAttendanceProps {
   className?: string;
 }
 
-const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = ({ 
-  className = '' 
-}) => {
+const FacialRecognitionAttendance: React.FC<
+  FacialRecognitionAttendanceProps
+> = ({ className = "" }) => {
   // State with proper types
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus | null>(null);
+  const [attendanceStatus, setAttendanceStatus] =
+    useState<AttendanceStatus | null>(null);
   const [showAdminLogin, setShowAdminLogin] = useState<boolean>(false);
-  const [adminCredentials, setAdminCredentials] = useState<AdminCredentials>({ 
-    username: '', 
-    password: '' 
+  const [adminCredentials, setAdminCredentials] = useState<AdminCredentials>({
+    username: "",
+    password: "",
   });
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
@@ -65,18 +73,18 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
 
   const startCamera = async (): Promise<void> => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480 } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480 },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsStreaming(true);
       }
     } catch (err) {
-      console.error('Error accessing camera:', err);
-      setAttendanceStatus({ 
-        type: 'error', 
-        message: 'Camera access denied' 
+      console.error("Error accessing camera:", err);
+      setAttendanceStatus({
+        type: "error",
+        message: "Camera access denied",
       });
     }
   };
@@ -92,18 +100,18 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
 
   const captureImage = (): string | null => {
     if (!videoRef.current || !canvasRef.current) return null;
-    
+
     const canvas = canvasRef.current;
     const video = videoRef.current;
-    const context = canvas.getContext('2d');
-    
+    const context = canvas.getContext("2d");
+
     if (!context) return null;
-    
+
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     context.drawImage(video, 0, 0);
-    
-    const imageData = canvas.toDataURL('image/jpeg');
+
+    const imageData = canvas.toDataURL("image/jpeg");
     setCapturedImage(imageData);
     return imageData;
   };
@@ -115,51 +123,54 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
     try {
       // Capture image
       const imageData = captureImage();
-      
+
       if (!imageData) {
-        throw new Error('Failed to capture image');
+        throw new Error("Failed to capture image");
       }
-      
+
       // Simulate processing time
-      await new Promise<void>(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+
       // Prepare request payload
       const requestPayload: AttendanceRequest = {
         image: imageData,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       // Send to backend for facial recognition
-    //   const response = await fetch('/api/attendance/mark', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(requestPayload)
-    //   });
+      const response = await fetch(
+        "http://127.0.0.1:8000/api/face/recognize/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestPayload),
+        }
+      );
 
-    //   if (!response.ok) {
-    //     throw new Error('Network response was not ok');
-    //   }
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
 
-    //   const result: AttendanceResponse = await response.json();
+      const result: AttendanceResponse = await response.json();
 
       // For demo purposes, simulate success
-      setAttendanceStatus({ 
-        type: 'success', 
-        message: 'Attendance marked successfully! Welcome to work.' 
+      setAttendanceStatus({
+        type: "success",
+        message: "Attendance marked successfully! Welcome to work.",
       });
 
-    //   setAttendanceStatus({ 
-    //     type: 'success', 
-    //     message: result.message || 'Attendance marked successfully! Welcome to work.' 
-    //   });
-      
+      //   setAttendanceStatus({
+      //     type: 'success',
+      //     message: result.message || 'Attendance marked successfully! Welcome to work.'
+      //   });
     } catch (error) {
-      console.error('Attendance marking error:', error);
-      setAttendanceStatus({ 
-        type: 'error', 
-        message: 'Face not recognized. Please try again or contact admin.' 
+      //   console.error('Attendance marking error:', error);
+      console.log("Attendance marking error: ", error);
+      setAttendanceStatus({
+        type: "error",
+        message: "Face not recognized. Please try again or contact admin.",
       });
     } finally {
       setIsProcessing(false);
@@ -168,61 +179,62 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
 
   const handleAdminLogin = async (): Promise<void> => {
     const { username, password } = adminCredentials;
-    
+
     if (!username || !password) {
       return;
     }
 
     try {
       // Simulate admin authentication
-      if (username === 'admin' && password === 'admin123') {
+      if (username === "admin" && password === "admin123") {
         setIsAdmin(true);
         setShowAdminLogin(false);
         // Redirect to dashboard
-        window.location.href = '/dashboard';
+        window.location.href = "/dashboard";
       } else {
-        alert('Invalid admin credentials');
+        alert("Invalid admin credentials");
       }
     } catch (error) {
-      console.error('Admin login error:', error);
-      alert('Login failed. Please try again.');
+      console.error("Admin login error:", error);
+      alert("Login failed. Please try again.");
     }
   };
 
-  const handleCredentialChange = (field: keyof AdminCredentials) => 
+  const handleCredentialChange =
+    (field: keyof AdminCredentials) =>
     (e: React.ChangeEvent<HTMLInputElement>): void => {
-      setAdminCredentials(prev => ({ ...prev, [field]: e.target.value }));
+      setAdminCredentials((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>): void => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleAdminLogin();
     }
   };
 
   const getCurrentTime = (): string => {
-    return new Date().toLocaleTimeString('en-US', { 
+    return new Date().toLocaleTimeString("en-US", {
       hour12: false,
-      hour: '2-digit',
-      minute: '2-digit'
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const getCurrentDate = (): string => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   // Mock data for today's summary - in real app, this would come from props or API
   const todaysSummary: TodaysSummary = {
-    checkIn: '08:00',
+    checkIn: "08:00",
     checkOut: null,
-    totalTime: '8h 0m',
-    status: 'On Time'
+    totalTime: "8h 0m",
+    status: "On Time",
   };
 
   return (
@@ -235,11 +247,15 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
               <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">B</span>
               </div>
-              <h1 className="text-xl font-semibold text-gray-900">BiPay Attendance</h1>
+              <h1 className="text-xl font-semibold text-gray-900">
+                BiPay Attendance
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <div className="text-sm font-medium text-gray-900">{getCurrentTime()}</div>
+                <div className="text-sm font-medium text-gray-900">
+                  {getCurrentTime()}
+                </div>
                 <div className="text-xs text-gray-500">{getCurrentDate()}</div>
               </div>
               <button
@@ -263,7 +279,7 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
               <Camera className="w-5 h-5 text-purple-600" />
               <h2 className="text-lg font-medium text-gray-900">Camera</h2>
             </div>
-            
+
             <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video mb-6">
               <video
                 ref={videoRef}
@@ -280,7 +296,7 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
                   </div>
                 </div>
               )}
-              
+
               {/* Overlay for face detection area */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="border-2 border-purple-400 border-dashed rounded-lg w-64 h-48 flex items-center justify-center">
@@ -313,20 +329,24 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
 
             {/* Status Messages */}
             {attendanceStatus && (
-              <div className={`mt-4 p-4 rounded-lg flex items-center space-x-3 ${
-                attendanceStatus.type === 'success' 
-                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}>
-                {attendanceStatus.type === 'success' ? (
+              <div
+                className={`mt-4 p-4 rounded-lg flex items-center space-x-3 ${
+                  attendanceStatus.type === "success"
+                    ? "bg-green-50 text-green-700 border border-green-200"
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}
+              >
+                {attendanceStatus.type === "success" ? (
                   <CheckCircle className="w-5 h-5 flex-shrink-0" />
                 ) : (
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 )}
-                <span className="text-sm font-medium">{attendanceStatus.message}</span>
+                <span className="text-sm font-medium">
+                  {attendanceStatus.message}
+                </span>
               </div>
             )}
-            
+
             <canvas ref={canvasRef} className="hidden" />
           </div>
 
@@ -336,7 +356,9 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
               <>
                 <div className="flex items-center space-x-2 mb-6">
                   <User className="w-5 h-5 text-purple-600" />
-                  <h2 className="text-lg font-medium text-gray-900">Admin Login</h2>
+                  <h2 className="text-lg font-medium text-gray-900">
+                    Admin Login
+                  </h2>
                 </div>
 
                 <div className="space-y-4">
@@ -347,7 +369,7 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
                     <input
                       type="text"
                       value={adminCredentials.username}
-                      onChange={handleCredentialChange('username')}
+                      onChange={handleCredentialChange("username")}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="Enter admin username"
                     />
@@ -360,7 +382,7 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
                     <input
                       type="password"
                       value={adminCredentials.password}
-                      onChange={handleCredentialChange('password')}
+                      onChange={handleCredentialChange("password")}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       placeholder="Enter admin password"
                       onKeyPress={handleKeyPress}
@@ -380,37 +402,60 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
               <>
                 <div className="flex items-center space-x-2 mb-6">
                   <Clock className="w-5 h-5 text-purple-600" />
-                  <h2 className="text-lg font-medium text-gray-900">How to Mark Attendance</h2>
+                  <h2 className="text-lg font-medium text-gray-900">
+                    How to Mark Attendance
+                  </h2>
                 </div>
 
                 <div className="space-y-6">
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 text-sm font-medium">1</span>
+                      <span className="text-purple-600 text-sm font-medium">
+                        1
+                      </span>
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Position your face</h3>
-                      <p className="text-sm text-gray-600">Align your face within the dotted rectangle on the camera feed</p>
+                      <h3 className="font-medium text-gray-900">
+                        Position your face
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Align your face within the dotted rectangle on the
+                        camera feed
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 text-sm font-medium">2</span>
+                      <span className="text-purple-600 text-sm font-medium">
+                        2
+                      </span>
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Click Mark Attendance</h3>
-                      <p className="text-sm text-gray-600">Press the button to capture your photo and record attendance</p>
+                      <h3 className="font-medium text-gray-900">
+                        Click Mark Attendance
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Press the button to capture your photo and record
+                        attendance
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 text-sm font-medium">3</span>
+                      <span className="text-purple-600 text-sm font-medium">
+                        3
+                      </span>
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900">Wait for confirmation</h3>
-                      <p className="text-sm text-gray-600">The system will process your image and confirm attendance</p>
+                      <h3 className="font-medium text-gray-900">
+                        Wait for confirmation
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        The system will process your image and confirm
+                        attendance
+                      </p>
                     </div>
                   </div>
 
@@ -418,7 +463,9 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
                     <div className="flex items-start space-x-2">
                       <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-medium text-blue-900">Tips for best results:</h4>
+                        <h4 className="font-medium text-blue-900">
+                          Tips for best results:
+                        </h4>
                         <ul className="text-sm text-blue-800 mt-1 space-y-1">
                           <li>• Ensure good lighting on your face</li>
                           <li>• Look directly at the camera</li>
@@ -434,18 +481,20 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
         </div>
 
         {/* Today's Summary */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Today's Summary</h3>
+        {/* <div className="mt-8 bg-white rounded-lg shadow-sm border p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Today's Summary
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">
-                {todaysSummary.checkIn || '--:--'}
+                {todaysSummary.checkIn || "--:--"}
               </div>
               <div className="text-sm text-blue-600">Check In</div>
             </div>
             <div className="bg-purple-50 p-4 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">
-                {todaysSummary.checkOut || '--:--'}
+                {todaysSummary.checkOut || "--:--"}
               </div>
               <div className="text-sm text-purple-600">Check Out</div>
             </div>
@@ -462,7 +511,7 @@ const FacialRecognitionAttendance: React.FC<FacialRecognitionAttendanceProps> = 
               <div className="text-sm text-orange-600">Status</div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
