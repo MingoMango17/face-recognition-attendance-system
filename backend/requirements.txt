@@ -3,3 +3,4 @@ djangorestframework
 djangorestframework-simplejwt
 facedb
 django-cors-headers
+pytz
