@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from .services import get_facedb
@@ -9,11 +10,11 @@ from PIL import Image
 
 
 class FaceRecognitionView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         facedb = get_facedb()
         data = request.data
 
-        # Extract image from nested structure
         image_data = data.get("image")
         if not image_data:
             return Response(
@@ -22,7 +23,6 @@ class FaceRecognitionView(APIView):
             )
 
         try:
-            # Handle base64 image data
             if image_data.startswith("data:image"):
                 # Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
                 image_data = image_data.split(",")[1]
@@ -34,12 +34,11 @@ class FaceRecognitionView(APIView):
             image = Image.open(BytesIO(image_bytes))
 
             # Pass the processed image to your embedding function
-            # You might need to adjust this based on what format your embedding_func expects
             embed_img = facedb.embedding_func(
                 image
-            )  # or image_bytes, depending on your function
+            )
 
-            similar_results = facedb.check_similar(embeddings=embed_img)
+            similar_results = facedb.check_similar(embeddings=embed_img, threshold=99)
 
             if similar_results and similar_results[0]:
                 return Response(
@@ -64,12 +63,13 @@ class FaceRecognitionView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
 class AddFaceView(APIView):
     def post(self, request):
         facedb = get_facedb()
         data = request.data
         image_data = data.get("image")
-        
+
         if not image_data:
             return Response(
                 {"error": {"message": "image is required"}},

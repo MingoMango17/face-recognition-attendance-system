@@ -26,6 +26,7 @@ urlpatterns = [
             [
                 path("face/", include("face.urls")),
                 path("payroll/", include("payroll.urls")),
+                path("auth/", include("custom_auth.urls"))
             ]
         ),
     ),

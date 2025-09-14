@@ -1,10 +1,11 @@
 # Generated migration file for test data
 from django.db import migrations
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.contrib.auth.hashers import make_password
 from decimal import Decimal
 from datetime import datetime, timedelta
 import pytz
+
 
 def create_test_data(apps, schema_editor):
     # Get model classes
@@ -12,7 +13,22 @@ def create_test_data(apps, schema_editor):
     AttendanceRecord = apps.get_model('payroll', 'AttendanceRecord')
     Allowance = apps.get_model('payroll', 'Allowance')
     SalaryDeductions = apps.get_model('payroll', 'SalaryDeductions')
-    User = apps.get_model('auth', 'User')
+    User = apps.get_model(settings.AUTH_USER_MODEL)
+    
+    # Create superuser (admin)
+    admin_user, created = User.objects.get_or_create(
+        username='admin',
+        defaults={
+            'first_name': 'Admin',
+            'last_name': 'User',
+            'email': 'admin@company.com',
+            'is_active': True,
+            'is_staff': True,
+            'is_superuser': True,
+            'password': make_password('1'),
+            'role': 4,  # ADMIN role if you're using the custom User model with roles
+        }
+    )
     
     # Create test users
     users_data = [
@@ -32,8 +48,8 @@ def create_test_data(apps, schema_editor):
                 'last_name': user_data['last_name'],
                 'email': user_data['email'],
                 'is_active': True,
-            },
-            password=make_password('1')
+                'password': make_password('1')
+            }
         )
         created_users.append(user)
     
@@ -186,10 +202,11 @@ def reverse_test_data(apps, schema_editor):
     AttendanceRecord = apps.get_model('payroll', 'AttendanceRecord')
     Allowance = apps.get_model('payroll', 'Allowance')
     SalaryDeductions = apps.get_model('payroll', 'SalaryDeductions')
-    User = apps.get_model('auth', 'User')
+    User = apps.get_model(settings.AUTH_USER_MODEL)
+
     
     # Delete all test data (be careful in production!)
-    test_usernames = ['john_doe', 'jane_smith', 'mike_johnson', 'sarah_wilson', 'david_brown']
+    test_usernames = ['john_doe', 'jane_smith', 'mike_johnson', 'sarah_wilson', 'david_brown', 'admin']
     
     # Delete related records first
     employees = Employee.objects.filter(user__username__in=test_usernames)
@@ -200,13 +217,12 @@ def reverse_test_data(apps, schema_editor):
     # Delete employees
     employees.delete()
     
-    # Delete test users
+    # Delete test users (including admin)
     User.objects.filter(username__in=test_usernames).delete()
 
 class Migration(migrations.Migration):
     dependencies = [
         ('payroll', '0001_initial'),  # Adjust this to your actual previous migration
-        ('auth', '0012_alter_user_first_name_max_length'),  # Ensure User model is available
     ]
 
     operations = [
