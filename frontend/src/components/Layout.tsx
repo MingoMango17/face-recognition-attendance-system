@@ -25,20 +25,26 @@ const Layout: React.FC<LayoutProps> = ({
   sidebarClassName,
 }) => {
   return (
-    <div className={contentClassName}>
-      <Header
-        title={headerTitle}
-        rightContent={headerRightContent}
-        showDateTime={showDateTime}
-        className={headerClassName}
-      />
-      
-      <div className="flex h-[calc(100vh-73px)]"> {/* Subtract header height */}
+    <div className={`min-h-screen text-black ${contentClassName}`}>
+      {/* Header - Fixed at top with proper z-index */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <Header
+          title={headerTitle}
+          rightContent={headerRightContent}
+          showDateTime={showDateTime}
+          className={headerClassName}
+        />
+      </div>
+
+      {/* Content area with sidebar and main content */}
+      <div className="flex pt-[73px]"> {/* Add padding-top to account for fixed header */}
         {showSidebar && (
-          <Sidebar className={sidebarClassName} />
+          <div className="fixed left-0 top-[73px] bottom-0 z-40">
+            <Sidebar className={sidebarClassName} />
+          </div>
         )}
         
-        <main className={`flex-1 overflow-auto ${showSidebar ? '' : 'w-full'}`}>
+        <main className={`flex-1 overflow-auto ${showSidebar ? 'ml-64' : ''}`}>
           {children}
         </main>
       </div>

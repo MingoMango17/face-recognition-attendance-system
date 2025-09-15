@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardPage from "./pages/DashboardPage";
+import EmployeePage from "./pages/EmployeePage";
 
 function App() {
     return (
@@ -17,6 +18,15 @@ function App() {
                         element={
                             <ProtectedRoute>
                                 <DashboardPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route 
+                        path="/employee"
+                        element={
+                            <ProtectedRoute>
+                                <EmployeePage/>
                             </ProtectedRoute>
                         }
                     />

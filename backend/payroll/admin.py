@@ -59,7 +59,7 @@ class AllowanceAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(SalaryDeductions)
+@admin.register(SalaryDeduction)
 class SalaryDeductionsAdmin(admin.ModelAdmin):
     list_display = ("employee", "deduction_type", "value", "is_active")
     list_filter = ("deduction_type", "is_active")

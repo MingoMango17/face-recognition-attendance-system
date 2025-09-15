@@ -31,14 +31,14 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <div className={`bg-white shadow-sm border-b ${className}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={`bg-white shadow-sm border border-gray-200 w-full ${className}`}>
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Left side - Logo and Title */}
           <div className="flex items-center space-x-3">
-            {/* <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-sm">B</span>
-            </div> */}
+            </div>
             <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
           </div>
 

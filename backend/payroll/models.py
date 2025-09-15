@@ -17,8 +17,8 @@ class Employee(models.Model):
     salary_type = models.IntegerField(choices=SALARY_TYPE, default=HOURLY)
     hire_date = models.DateField(auto_now_add=True)
     base_salary = models.DecimalField(max_digits=10, decimal_places=2)
-    department = models.CharField(max_length=128)
-    details = models.TextField()
+    department = models.CharField(max_length=128, null=True, blank=True)
+    details = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     
     def __str__(self):
@@ -78,7 +78,7 @@ class Allowance(models.Model):
         Employee, on_delete=models.CASCADE, related_name="allowances"
     )
     value = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, null=True)
     allowance_type = models.IntegerField(
         choices=ALLOWANCE_TYPE, blank=False, null=False
     )
@@ -88,7 +88,7 @@ class Allowance(models.Model):
     def __str__(self):
         return f"Allowance for {self.employee.user.username}"
 
-class SalaryDeductions(models.Model):
+class SalaryDeduction(models.Model):
     TAX = 1
     HEALTH = 2
     SOCIAL_SECURITY = 3
@@ -163,5 +163,5 @@ class PayslipAllowance(models.Model):
 
 class PayslipDeduction(models.Model):
     payslip = models.ForeignKey(Payslip, on_delete=models.CASCADE, related_name="payslip_deductions")
-    deduction_type = models.IntegerField(choices=SalaryDeductions.DEDUCTION_TYPE)
+    deduction_type = models.IntegerField(choices=SalaryDeduction.DEDUCTION_TYPE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)

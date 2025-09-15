@@ -17,6 +17,28 @@ api.interceptors.request.use(
     }
 );
 
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Token expired, force logout
+      await forceLogout();
+    }
+    return Promise.reject(error);
+  }
+);
+
+const forceLogout = async () => {
+  // Clear tokens
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+
+  
+  // Redirect to login page
+  window.location.href = '/';
+};
+
+
 const apiLogin = async (username: string, password: string) => {
     try {
         const response = await api.post("auth/login/", {

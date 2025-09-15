@@ -101,7 +101,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='SalaryDeductions',
+            name='SalaryDeduction',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('value', models.DecimalField(decimal_places=2, default=0, max_digits=10)),

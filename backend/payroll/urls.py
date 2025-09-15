@@ -5,5 +5,6 @@ from .views import *
 router = routers.SimpleRouter()
 
 urlpatterns = [
-    path('', include(router.urls))
+    path("", include(router.urls)),
+    path("employees/", EmployeeView.as_view(), name="employees"),
 ]

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Camera, Clock, CheckCircle, AlertCircle } from "lucide-react";
 
 // Type definitions
@@ -38,42 +38,127 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
     // Refs
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const streamRef = useRef<MediaStream | null>(null); // Store stream reference
+    const mountedRef = useRef<boolean>(true); // Track if component is mounted
 
-    useEffect(() => {
-        startCamera();
-        return () => {
-            stopCamera();
-        };
+    // Comprehensive camera cleanup function
+    const stopCamera = useCallback((): void => {
+        console.log('Stopping camera...');
+        
+        try {
+            // Stop all tracks from the stored stream reference
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach((track: MediaStreamTrack) => {
+                    track.stop();
+                    console.log(`Stopped ${track.kind} track`);
+                });
+                streamRef.current = null;
+            }
+
+            // Also check video element's srcObject
+            if (videoRef.current && videoRef.current.srcObject) {
+                const videoStream = videoRef.current.srcObject as MediaStream;
+                videoStream.getTracks().forEach((track: MediaStreamTrack) => {
+                    track.stop();
+                });
+                videoRef.current.srcObject = null;
+            }
+
+            // Update state only if component is still mounted
+            if (mountedRef.current) {
+                setIsStreaming(false);
+            }
+        } catch (error) {
+            console.error('Error stopping camera:', error);
+        }
     }, []);
 
-    const startCamera = async (): Promise<void> => {
+    const startCamera = useCallback(async (): Promise<void> => {
+        // Don't start if component is unmounted
+        if (!mountedRef.current) return;
+
         try {
+            // Stop any existing stream first
+            stopCamera();
+
+            console.log('Starting camera...');
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: 640, height: 480 },
+                video: { 
+                    width: 640, 
+                    height: 480,
+                    facingMode: 'user' // Prefer front camera
+                },
             });
-            if (videoRef.current) {
+
+            // Store stream reference for cleanup
+            streamRef.current = stream;
+
+            if (videoRef.current && mountedRef.current) {
                 videoRef.current.srcObject = stream;
                 setIsStreaming(true);
+                console.log('Camera started successfully');
+            } else {
+                // If video ref is not available, stop the stream
+                stream.getTracks().forEach(track => track.stop());
             }
         } catch (err) {
             console.error("Error accessing camera:", err);
-            setAttendanceStatus({
-                type: "error",
-                message: "Camera access denied",
-            });
+            if (mountedRef.current) {
+                setAttendanceStatus({
+                    type: "error",
+                    message: "Camera access denied. Please allow camera permissions and refresh the page.",
+                });
+            }
         }
-    };
+    }, [stopCamera]);
 
-    const stopCamera = (): void => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            const tracks = stream.getTracks();
-            tracks.forEach((track: MediaStreamTrack) => track.stop());
-            setIsStreaming(false);
-        }
-    };
+    // Effect for mounting/unmounting
+    useEffect(() => {
+        mountedRef.current = true;
+        startCamera();
 
-    const captureImage = (): string | null => {
+        // Cleanup function
+        return () => {
+            console.log('Component unmounting, cleaning up camera...');
+            mountedRef.current = false;
+            stopCamera();
+        };
+    }, [startCamera, stopCamera]);
+
+    // Additional cleanup on page visibility change
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                console.log('Page hidden, stopping camera');
+                stopCamera();
+            } else if (mountedRef.current) {
+                console.log('Page visible, restarting camera');
+                startCamera();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [startCamera, stopCamera]);
+
+    // Cleanup on beforeunload (when user navigates away)
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            console.log('Page unloading, stopping camera');
+            stopCamera();
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [stopCamera]);
+
+    const captureImage = useCallback((): string | null => {
         if (!videoRef.current || !canvasRef.current) return null;
 
         const canvas = canvasRef.current;
@@ -89,9 +174,11 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
         const imageData = canvas.toDataURL("image/jpeg");
         setCapturedImage(imageData);
         return imageData;
-    };
+    }, []);
 
     const handleMarkAttendance = async (): Promise<void> => {
+        if (!mountedRef.current) return; // Don't process if unmounted
+
         setIsProcessing(true);
         setAttendanceStatus(null);
 
@@ -105,6 +192,9 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
 
             // Simulate processing time
             await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+
+            // Check if still mounted before continuing
+            if (!mountedRef.current) return;
 
             // Prepare request payload
             const requestPayload: AttendanceRequest = {
@@ -130,6 +220,9 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
 
             const result: AttendanceResponse = await response.json();
 
+            // Only update state if component is still mounted
+            if (!mountedRef.current) return;
+
             if (result.data.message === "no similar face found") {
                 setAttendanceStatus({
                     type: "error",
@@ -137,7 +230,6 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
                         "Face not recognized. Please try again or contact admin.",
                 });
             } else {
-                // For demo purposes, simulate success
                 setAttendanceStatus({
                     type: "success",
                     message: "Attendance marked successfully! Welcome to work.",
@@ -145,13 +237,17 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
             }
         } catch (error) {
             console.log("Attendance marking error: ", error);
-            setAttendanceStatus({
-                type: "error",
-                message:
-                    "Unable to detect a face. Please move to a well-lit area and ensure only one person is visible in the camera frame",
-            });
+            if (mountedRef.current) {
+                setAttendanceStatus({
+                    type: "error",
+                    message:
+                        "Unable to detect a face. Please move to a well-lit area and ensure only one person is visible in the camera frame",
+                });
+            }
         } finally {
-            setIsProcessing(false);
+            if (mountedRef.current) {
+                setIsProcessing(false);
+            }
         }
     };
 
@@ -160,6 +256,10 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
             <div className="flex items-center space-x-2 mb-4">
                 <Camera className="w-5 h-5 text-purple-600" />
                 <h2 className="text-lg font-medium text-gray-900">Camera</h2>
+                {/* Debug info */}
+                <span className="text-xs text-gray-500">
+                    {isStreaming ? '🟢 Active' : '🔴 Inactive'}
+                </span>
             </div>
 
             <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video mb-6">

@@ -12,7 +12,7 @@ def create_test_data(apps, schema_editor):
     Employee = apps.get_model('payroll', 'Employee')
     AttendanceRecord = apps.get_model('payroll', 'AttendanceRecord')
     Allowance = apps.get_model('payroll', 'Allowance')
-    SalaryDeductions = apps.get_model('payroll', 'SalaryDeductions')
+    SalaryDeduction = apps.get_model('payroll', 'SalaryDeduction')
     User = apps.get_model(settings.AUTH_USER_MODEL)
     
     # Create superuser (admin)
@@ -194,14 +194,14 @@ def create_test_data(apps, schema_editor):
     ]
     
     for deduction_data in deductions_data:
-        SalaryDeductions.objects.create(**deduction_data)
+        SalaryDeduction.objects.create(**deduction_data)
 
 def reverse_test_data(apps, schema_editor):
     # Get model classes
     Employee = apps.get_model('payroll', 'Employee')
     AttendanceRecord = apps.get_model('payroll', 'AttendanceRecord')
     Allowance = apps.get_model('payroll', 'Allowance')
-    SalaryDeductions = apps.get_model('payroll', 'SalaryDeductions')
+    SalaryDeduction = apps.get_model('payroll', 'SalaryDeduction')
     User = apps.get_model(settings.AUTH_USER_MODEL)
 
     
@@ -212,7 +212,7 @@ def reverse_test_data(apps, schema_editor):
     employees = Employee.objects.filter(user__username__in=test_usernames)
     AttendanceRecord.objects.filter(employee__in=employees).delete()
     Allowance.objects.filter(employee__in=employees).delete()
-    SalaryDeductions.objects.filter(employee__in=employees).delete()
+    SalaryDeduction.objects.filter(employee__in=employees).delete()
     
     # Delete employees
     employees.delete()
