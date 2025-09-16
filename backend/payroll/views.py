@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from .serializers import *
 from .models import Employee, SalaryDeduction
 
+
 class EmployeeView(APIView):
     def get(self, request):
 
@@ -15,17 +16,11 @@ class EmployeeView(APIView):
 
 class DeductionView(APIView):
     def get(self, request):
-        data = request.data
-
-        employee_id = data.get("employee_id", None)
-
+        employee_id = request.query_params.get("employee_id", None)
         if employee_id:
             deductions = SalaryDeduction.objects.filter(
                 employee=employee_id, is_active=True
             )
-            
             serializer = DeductionSerializer(deductions, many=True)
-            
             return Response(serializer.data)
-            
         return Response({"error": "employee_id needed"})

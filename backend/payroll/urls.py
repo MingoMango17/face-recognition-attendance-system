@@ -7,4 +7,5 @@ router = routers.SimpleRouter()
 urlpatterns = [
     path("", include(router.urls)),
     path("employees/", EmployeeView.as_view(), name="employees"),
+    path("deductions/", DeductionView.as_view(), name="deductions"),
 ]
