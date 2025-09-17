@@ -4,7 +4,7 @@ import { api } from "../../../utils/api";
 interface EmployeeFormData {
     first_name: string;
     last_name: string;
-    email: string;
+    username: string;
     department?: string;
     password: string;
     salary: string;
@@ -19,7 +19,7 @@ interface Employee {
         id: number;
         first_name: string;
         last_name: string;
-        email: string;
+        email?: string;
         username: string;
     };
     salary_type: 1 | 2;
@@ -44,7 +44,7 @@ export const useEmployeeModal = ({
     const [formData, setFormData] = useState<EmployeeFormData>({
         first_name: "",
         last_name: "",
-        email: "",
+        username: "",
         department: "",
         password: "",
         salary: "",
@@ -59,7 +59,7 @@ export const useEmployeeModal = ({
         setFormData({
             first_name: "",
             last_name: "",
-            email: "",
+            username: "",
             department: "",
             password: "",
             salary: "",
@@ -77,7 +77,7 @@ export const useEmployeeModal = ({
             setFormData({
                 first_name: employee.user.first_name,
                 last_name: employee.user.last_name,
-                email: employee.user.email,
+                username: employee.user.username,
                 department: employee.department,
                 password: "", // Don't populate password for security
                 salary: employee.base_salary,

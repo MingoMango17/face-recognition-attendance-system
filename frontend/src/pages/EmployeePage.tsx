@@ -14,7 +14,7 @@ interface Employee {
         id: number;
         first_name: string;
         last_name: string;
-        email: string;
+        email?: string;
         username: string;
     };
     salary_type: 1 | 2; // 1 = HOURLY, 2 = MONTHLY
@@ -34,14 +34,15 @@ interface EmployeeFilters {
 interface EmployeeFormData {
     first_name: string;
     last_name: string;
-    email: string;
+    username: string;
     department?: string;
     password: string;
     salary: string;
     salary_type: "hourly" | "monthly";
-    deductions: Array<{ type: string; amount: string }>;
+    deductions: Array<{ type: number; amount: string }>;
     allowances: Array<{ type: string; amount: string; taxable: boolean }>;
 }
+
 
 const EmployeePage: React.FC = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -85,9 +86,9 @@ const EmployeePage: React.FC = () => {
                 `${employee.user.first_name} ${employee.user.last_name}`.toLowerCase();
             const matchesSearch =
                 fullName.includes(searchTerm.toLowerCase()) ||
-                employee.user.email
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase()) ||
+                // employee.user.email
+                //     .toLowerCase()
+                //     .includes(searchTerm.toLowerCase()) ||
                 employee.department
                     .toLowerCase()
                     .includes(searchTerm.toLowerCase());
@@ -158,7 +159,8 @@ const EmployeePage: React.FC = () => {
                     user: {
                         first_name: data.first_name,
                         last_name: data.last_name,
-                        email: data.email,
+                        // email: data.email,
+                        username: data.username,
                         password: data.password,
                     },
                     department: data.department,
@@ -175,7 +177,7 @@ const EmployeePage: React.FC = () => {
                     user: {
                         first_name: data.first_name,
                         last_name: data.last_name,
-                        email: data.email,
+                        username: data.username,
                         ...(data.password && { password: data.password }), // Only include password if provided
                     },
                     department: data.department,

@@ -7,7 +7,7 @@ interface Employee {
         id: number;
         first_name: string;
         last_name: string;
-        email: string;
+        email?: string;
         username: string;
     };
     salary_type: 1 | 2;
@@ -126,9 +126,11 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
                                                 {employee.user.first_name}{" "}
                                                 {employee.user.last_name}
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {employee.user.email}
-                                            </div>
+                                            {employee.user?.email && (
+                                                <div className="text-sm text-gray-500">
+                                                    {employee.user.email}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </td>

@@ -8,7 +8,7 @@ import AllowancesSection from "./Modal/AllowancesSection";
 interface EmployeeFormData {
     first_name: string;
     last_name: string;
-    email: string;
+    username: string;
     department?: string;
     password: string;
     salary: string;
@@ -23,7 +23,7 @@ interface Employee {
         id: number;
         first_name: string;
         last_name: string;
-        email: string;
+        email?: string;
         username: string;
     };
     salary_type: 1 | 2; // 1 = HOURLY, 2 = MONTHLY

@@ -1,10 +1,23 @@
 import React from "react";
 
+interface EmployeeFormData {
+    first_name: string;
+    last_name: string;
+    username: string;
+    department?: string;
+    password: string;
+    salary: string;
+    salary_type: "hourly" | "monthly";
+    deductions: Array<{ type: number; amount: string }>;
+    allowances: Array<{ type: string; amount: string; taxable: boolean }>;
+}
+
 interface BasicInfoSectionProps {
     formData: {
         first_name: string;
         last_name: string;
-        email: string;
+        email?: string;
+        username?: string;
         department?: string;
         password: string;
         salary: string;
@@ -13,7 +26,7 @@ interface BasicInfoSectionProps {
     departments: string[];
     mode: "add" | "edit";
     loading: boolean;
-    onChange: (field: string, value: any) => void;
+    onChange: (field: keyof EmployeeFormData, value: any) => void;
 }
 
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
@@ -52,13 +65,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-1">
-                    Email *
+                <label className="block text-sm` font-medium mb-1">
+                    Username *
                 </label>
                 <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => onChange("email", e.target.value)}
+                    type="text"
+                    value={formData.username}
+                    onChange={(e) => onChange("username", e.target.value)}
                     className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
                     required
                     disabled={loading}
