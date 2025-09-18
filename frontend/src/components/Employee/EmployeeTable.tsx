@@ -52,9 +52,9 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
     const formatSalary = (salary: string, type: 1 | 2) => {
         const amount = parseFloat(salary);
         if (type === 1) {
-            return `$${amount.toFixed(2)}/hr`;
+            return `PHP${amount.toFixed(2)}/hr`;
         } else {
-            return `$${amount.toLocaleString()}/year`;
+            return `PHP${amount.toLocaleString()}/year`;
         }
     };
 

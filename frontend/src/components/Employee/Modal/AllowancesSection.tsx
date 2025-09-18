@@ -2,7 +2,7 @@ import React from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 interface Allowance {
-    type: string;
+    type: number;
     amount: string;
     taxable: boolean;
 }
@@ -44,7 +44,7 @@ const AllowancesSection: React.FC<AllowancesSectionProps> = ({
                     className="flex items-center space-x-2 mb-2"
                 >
                     <select
-                        value={allowance.type}
+                        value={allowanceTypes[allowance.type]}
                         onChange={(e) =>
                             onUpdate(index, "type", e.target.value)
                         }

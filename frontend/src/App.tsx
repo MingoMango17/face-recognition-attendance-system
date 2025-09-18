@@ -5,6 +5,8 @@ import HomePage from "./pages/HomePage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeePage from "./pages/EmployeePage";
+import LeavePage from "./pages/LeavePage";
+import AttendancePage from "./pages/AttendancePage";
 
 function App() {
     return (
@@ -22,11 +24,29 @@ function App() {
                         }
                     />
 
-                    <Route 
+                    <Route
                         path="/employee"
                         element={
                             <ProtectedRoute>
-                                <EmployeePage/>
+                                <EmployeePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/leave"
+                        element={
+                            <ProtectedRoute>
+                                <LeavePage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/attendance"
+                        element={
+                            <ProtectedRoute>
+                                <AttendancePage />
                             </ProtectedRoute>
                         }
                     />

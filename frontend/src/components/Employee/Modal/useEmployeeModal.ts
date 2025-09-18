@@ -10,7 +10,7 @@ interface EmployeeFormData {
     salary: string;
     salary_type: "hourly" | "monthly";
     deductions: Array<{ type: number; amount: string }>;
-    allowances: Array<{ type: string; amount: string; taxable: boolean }>;
+    allowances: Array<{ type: number; amount: string; taxable: boolean }>;
 }
 
 interface Employee {
@@ -35,6 +35,9 @@ interface UseEmployeeModalProps {
     employee?: Employee | null;
     isOpen: boolean;
 }
+
+const deductionTypes = ["Tax", "Health Insurance", "Social Security", "Other"];
+const allowanceTypes = ["Meal", "Transportation", "Medical", "Bonus"];
 
 export const useEmployeeModal = ({
     mode,
@@ -100,7 +103,6 @@ export const useEmployeeModal = ({
                 // Transform the API response to match your form structure
                 const formattedDeductions = deductionsResponse.data.map(
                     (deduction: any) => {
-                        console.log(deduction.deduction_type);
                         return {
                             type: deduction.deduction_type,
                             amount: deduction.value?.toString() || "0",
@@ -113,21 +115,28 @@ export const useEmployeeModal = ({
                     deductions: formattedDeductions,
                 }));
 
-                // Uncomment and modify if you have allowances endpoint
-                // const allowancesResponse = await api.get("payroll/allowances/", {
-                //     params: { employee_id: employee.id }
-                // });
-                //
-                // const formattedAllowances = allowancesResponse.data.map((allowance: any) => ({
-                //     type: allowance.type || allowance.allowance_type || "Meal",
-                //     amount: allowance.amount?.toString() || "0",
-                //     taxable: allowance.taxable || true
-                // }));
-                //
-                // setFormData(prev => ({
-                //     ...prev,
-                //     allowances: formattedAllowances
-                // }));
+                const allowancesResponse = await api.get(
+                    "payroll/allowances/",
+                    {
+                        params: { employee_id: employee.id },
+                    }
+                );
+
+                const formattedAllowances = allowancesResponse.data.map(
+                    (allowance: any) => ({
+                        type:
+                            allowance.type ||
+                            allowance.allowance_type ||
+                            "Meal",
+                        amount: allowance.value?.toString() || "0",
+                        taxable: allowance.taxable || true,
+                    })
+                );
+
+                setFormData((prev) => ({
+                    ...prev,
+                    allowances: formattedAllowances,
+                }));
             } catch (error) {
                 console.error("Error fetching employee data:", error);
             } finally {
@@ -158,9 +167,19 @@ export const useEmployeeModal = ({
     const updateDeduction = (index: number, field: string, value: any) => {
         setFormData((prev) => ({
             ...prev,
-            deductions: prev.deductions.map((item, i) =>
-                i === index ? { ...item, [field]: value } : item
-            ),
+            deductions: prev.deductions.map((item, i) => {
+                if (i === index) {
+                    if (field === "type") {
+                        const typeIndex = deductionTypes.indexOf(value);
+                        return {
+                            ...item,
+                            [field]: typeIndex !== -1 ? typeIndex : value,
+                        };
+                    }
+                    return { ...item, [field]: value };
+                }
+                return item;
+            }),
         }));
     };
 
@@ -176,7 +195,7 @@ export const useEmployeeModal = ({
             ...prev,
             allowances: [
                 ...prev.allowances,
-                { type: "Meal", amount: "0", taxable: true },
+                { type: 0, amount: "0", taxable: true },
             ],
         }));
     };
@@ -184,9 +203,19 @@ export const useEmployeeModal = ({
     const updateAllowance = (index: number, field: string, value: any) => {
         setFormData((prev) => ({
             ...prev,
-            allowances: prev.allowances.map((item, i) =>
-                i === index ? { ...item, [field]: value } : item
-            ),
+            allowances: prev.allowances.map((item, i) => {
+                if (i === index) {
+                    if (field === "type") {
+                        const typeIndex = allowanceTypes.indexOf(value);
+                        return {
+                            ...item,
+                            [field]: typeIndex !== -1 ? typeIndex : value,
+                        };
+                    }
+                    return { ...item, [field]: value };
+                }
+                return item;
+            }),
         }));
     };
 

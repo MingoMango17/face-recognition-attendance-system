@@ -7,10 +7,10 @@ interface Employee {
         id: number;
         first_name: string;
         last_name: string;
-        email: string;
+        email?: string;
         username: string;
     };
-    salary_type: 1 | 2;
+    salary_type: 1 | 2; // 1 = HOURLY, 2 = MONTHLY
     hire_date: string;
     base_salary: string;
     department: string;

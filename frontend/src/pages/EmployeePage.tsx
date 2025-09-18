@@ -43,7 +43,6 @@ interface EmployeeFormData {
     allowances: Array<{ type: string; amount: string; taxable: boolean }>;
 }
 
-
 const EmployeePage: React.FC = () => {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
@@ -57,11 +56,13 @@ const EmployeePage: React.FC = () => {
         salary_type: "",
         is_active: "",
     });
-    
+
     // Modal states
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const [modalMode, setModalMode] = useState<"add" | "edit">("add");
-    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+        null
+    );
 
     const fetchData = async () => {
         setLoading(true);
@@ -138,7 +139,11 @@ const EmployeePage: React.FC = () => {
     };
 
     const handleDeleteEmployee = async (employee: Employee) => {
-        if (window.confirm(`Are you sure you want to delete ${employee.user.first_name} ${employee.user.last_name}?`)) {
+        if (
+            window.confirm(
+                `Are you sure you want to delete ${employee.user.first_name} ${employee.user.last_name}?`
+            )
+        ) {
             try {
                 await api.delete(`payroll/employees/${employee.id}/`);
                 // Refresh the data after deletion
@@ -154,42 +159,42 @@ const EmployeePage: React.FC = () => {
     const handleModalSubmit = async (data: EmployeeFormData) => {
         try {
             if (modalMode === "add") {
-                // Create new employee
                 const employeeData = {
-                    user: {
-                        first_name: data.first_name,
-                        last_name: data.last_name,
-                        // email: data.email,
-                        username: data.username,
-                        password: data.password,
-                    },
+                    first_name: data.first_name,
+                    last_name: data.last_name,
+                    username: data.username,
+                    password: data.password,
                     department: data.department,
                     salary_type: data.salary_type === "hourly" ? 1 : 2,
                     base_salary: data.salary,
-                    // Add other fields as needed
+                    deductions: data.deductions,
+                    allowances: data.allowances,
                 };
-                
+
                 await api.post("payroll/employees/", employeeData);
                 console.log("Employee added successfully");
             } else if (modalMode === "edit" && selectedEmployee) {
+                console.log('data', data)
                 // Update existing employee
                 const employeeData = {
-                    user: {
-                        first_name: data.first_name,
-                        last_name: data.last_name,
-                        username: data.username,
-                        ...(data.password && { password: data.password }), // Only include password if provided
-                    },
+                    first_name: data.first_name,
+                    last_name: data.last_name,
+                    username: data.username,
+                    ...(data.password && { password: data.password }),
                     department: data.department,
                     salary_type: data.salary_type === "hourly" ? 1 : 2,
                     base_salary: data.salary,
-                    // Add other fields as needed
+                    deductions: data.deductions,
+                    allowances: data.allowances,
                 };
-                
-                await api.put(`payroll/employees/${selectedEmployee.id}/`, employeeData);
+
+                await api.patch(
+                    `payroll/employees/${selectedEmployee.id}/`,
+                    employeeData
+                );
                 console.log("Employee updated successfully");
             }
-            
+
             // Refresh the data after add/edit
             fetchData();
         } catch (error) {
@@ -220,8 +225,6 @@ const EmployeePage: React.FC = () => {
 
     const headerRightContent = (
         <EmployeeHeader
-            showFilters={showFilters}
-            onToggleFilters={() => setShowFilters(!showFilters)}
             onAddEmployee={handleAddEmployee}
             onExport={handleExport}
         />
@@ -240,7 +243,7 @@ const EmployeePage: React.FC = () => {
                 employee={selectedEmployee}
                 mode={modalMode}
             />
-            
+
             <div className="p-6">
                 <EmployeeStatsCards employees={employees} />
 

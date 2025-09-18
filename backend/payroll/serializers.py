@@ -29,3 +29,8 @@ class DeductionSerializer(ModelSerializer):
     class Meta:
         model = SalaryDeduction
         fields = "__all__"
+
+class AllowanceSerializer(ModelSerializer):
+    class Meta:
+        model = Allowance
+        fields = "__all__"

@@ -41,11 +41,13 @@ class AttendanceRecord(models.Model):
 
 
 class Leave(models.Model):
+    PAID_LEAVE = 0
     SICK = 1
     MATERNITY = 2
     LEAVE_WITHOUT_PAY = 3
 
     LEAVE_TYPES = (
+        (PAID_LEAVE, "PAID_LEAVE"),
         (SICK, "SICK"),
         (MATERNITY, "MATERNITY"),
         (LEAVE_WITHOUT_PAY, "LEAVE WITHOUT PAY"),
