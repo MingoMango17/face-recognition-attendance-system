@@ -1,5 +1,8 @@
-import React from "react";
-import { Edit, Trash2, Eye } from "lucide-react";
+import React, { useState } from "react";
+import { Edit, Trash2, CalendarMinus } from "lucide-react";
+import AddLeaveModal from "../Leave/AddLeaveModal";
+import type { LeaveFormData, LeavePayload } from "../../types/leave";
+import { api } from "../../utils/api";
 
 interface Employee {
     id: number;
@@ -66,6 +69,48 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         });
     };
 
+    const [showModal, setShowModal] = useState(false);
+    const [loadingLeave, setLoadingLeave] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+        null
+    );
+    const handleSubmitLeave = async (formData: LeaveFormData) => {
+        setLoadingLeave(true);
+
+        try {
+            // Mock API call - replace with actual implementation
+            // const selectedEmployee = employees.find(
+            //     (emp) => emp.id === parseInt(formData.employee_id)
+            // );
+            if (!selectedEmployee) {
+                console.error("No employee selected");
+                return;
+            }
+
+            const newLeave: LeavePayload = {
+                employee: selectedEmployee.id,
+                leave_type: parseInt(formData.leave_type),
+                details: formData.details,
+                start_date: formData.start_date,
+                end_date: formData.end_date,
+                is_approved: true,
+            };
+
+            const request = api.post("payroll/leaves/", newLeave);
+
+            setShowModal(false);
+        } catch (error) {
+            console.error("Error creating leave:", error);
+        } finally {
+            setLoadingLeave(false);
+        }
+    };
+
+    const onAddLeaveEmployee = (employee: Employee) => {
+        setSelectedEmployee(employee);
+        setShowModal(true);
+    };
+
     if (loading) {
         return (
             <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
@@ -86,9 +131,9 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Employee
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Department
-                            </th>
+                            </th> */}
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Salary Type
                             </th>
@@ -134,9 +179,9 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {employee.department}
-                                </td>
+                                </td> */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <span
                                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getSalaryTypeColor(
@@ -170,15 +215,15 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     <div className="flex items-center space-x-2">
-                                        {/* <button
+                                        <button
                                             onClick={() =>
-                                                onViewEmployee(employee)
+                                                onAddLeaveEmployee(employee)
                                             }
                                             className="text-blue-600 hover:text-blue-900"
                                             title="View Details"
                                         >
-                                            <Eye className="w-4 h-4" />
-                                        </button> */}
+                                            <CalendarMinus className="w-6 h-6" />
+                                        </button>
                                         <button
                                             onClick={() =>
                                                 onEditEmployee(employee)
@@ -204,6 +249,13 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
                     </tbody>
                 </table>
             </div>
+            <AddLeaveModal
+                isOpen={showModal}
+                onClose={() => setShowModal(false)}
+                onSubmit={handleSubmitLeave}
+                // employees={employees}
+                loading={loadingLeave}
+            />
         </div>
     );
 };

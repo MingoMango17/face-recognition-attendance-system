@@ -1,21 +1,13 @@
 // components/Leave/AddLeaveModal.tsx
 import React, { useState } from "react";
-import { type Employee, LEAVE_TYPES } from "../../types/leave";
+import { type Employee, LEAVE_TYPES, type LeaveFormData } from "../../types/leave";
 
 interface AddLeaveModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (formData: LeaveFormData) => void;
-    employees: Employee[];
+    employees?: Employee[];
     loading: boolean;
-}
-
-export interface LeaveFormData {
-    employee_id: string;
-    leave_type: string;
-    details: string;
-    start_date: string;
-    end_date: string;
 }
 
 const AddLeaveModal: React.FC<AddLeaveModalProps> = ({
@@ -75,7 +67,7 @@ const AddLeaveModal: React.FC<AddLeaveModalProps> = ({
                         Add New Leave
                     </h3>
                     <form onSubmit={handleSubmit}>
-                        <div className="mb-4">
+                        {/* <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Employee
                             </label>
@@ -96,7 +88,7 @@ const AddLeaveModal: React.FC<AddLeaveModalProps> = ({
                                     </option>
                                 ))}
                             </select>
-                        </div>
+                        </div> */}
 
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">

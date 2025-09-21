@@ -9,7 +9,7 @@ interface EmployeeFormData {
     salary: string;
     salary_type: "hourly" | "monthly";
     deductions: Array<{ type: number; amount: string }>;
-    allowances: Array<{ type: string; amount: string; taxable: boolean }>;
+    allowances: Array<{ type: number; amount: string; taxable: boolean }>;
 }
 
 interface BasicInfoSectionProps {
@@ -77,7 +77,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                     disabled={loading}
                 />
             </div>
-            <div>
+            {/* <div>
                 <label className="block text-sm font-medium mb-1">
                     Department
                 </label>
@@ -94,7 +94,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                         </option>
                     ))}
                 </select>
-            </div>
+            </div> */}
             {/* Password field - only show for add mode or if user wants to change password */}
             {mode === "add" && (
                 <div>

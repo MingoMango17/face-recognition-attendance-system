@@ -15,6 +15,23 @@ export interface Leave {
     is_approved: boolean;
 }
 
+export interface LeavePayload {
+    employee: number;
+    leave_type: number;
+    details: string;
+    start_date: string;
+    end_date: string;
+    is_approved: boolean;
+}
+
+export interface LeaveFormData {
+    employee_id: string;
+    leave_type: string;
+    details: string;
+    start_date: string;
+    end_date: string;
+}
+
 export const LEAVE_TYPES = {
     0: { label: "PAID LEAVE", color: "bg-green-100 text-green-800" },
     1: { label: "SICK", color: "bg-yellow-100 text-yellow-800" },

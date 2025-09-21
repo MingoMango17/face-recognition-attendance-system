@@ -5,13 +5,11 @@ import { Plus } from "lucide-react";
 interface LeaveTableHeaderProps {
     searchTerm: string;
     onSearchChange: (value: string) => void;
-    onAddLeave: () => void;
 }
 
 const LeaveTableHeader: React.FC<LeaveTableHeaderProps> = ({
     searchTerm,
     onSearchChange,
-    onAddLeave,
 }) => {
     return (
         <div className="px-6 py-4 border-b border-gray-200">
@@ -25,13 +23,6 @@ const LeaveTableHeader: React.FC<LeaveTableHeaderProps> = ({
                         className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                 </div>
-                <button
-                    onClick={onAddLeave}
-                    className="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Leave
-                </button>
             </div>
         </div>
     );

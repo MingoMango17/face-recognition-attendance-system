@@ -3,7 +3,6 @@ import React from "react";
 import { Edit, Trash2 } from "lucide-react";
 import { type Leave, LEAVE_TYPES } from "../../types/leave";
 
-
 interface LeaveTableRowProps {
     leave: Leave;
     onEdit: (leave: Leave) => void;
@@ -46,9 +45,9 @@ const LeaveTableRow: React.FC<LeaveTableRowProps> = ({
                         <div className="text-sm font-medium text-gray-900">
                             {leave.employee.name}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        {/* <div className="text-sm text-gray-500">
                             {leave.employee.department}
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </td>
@@ -79,9 +78,10 @@ const LeaveTableRow: React.FC<LeaveTableRowProps> = ({
                 </div>
             </td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {calculateDays(leave.start_date, leave.end_date)} days
+                {calculateDays(leave.start_date, leave.end_date)} day
+                {calculateDays(leave.start_date, leave.end_date) > 1 ? "s" : ""}
             </td>
-            <td className="px-6 py-4 whitespace-nowrap">
+            {/* <td className="px-6 py-4 whitespace-nowrap">
                 <span
                     className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         leave.is_approved
@@ -91,19 +91,19 @@ const LeaveTableRow: React.FC<LeaveTableRowProps> = ({
                 >
                     {leave.is_approved ? "Approved" : "Pending"}
                 </span>
-            </td>
+            </td> */}
             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
+                {/* <button
                     onClick={() => onEdit(leave)}
                     className="text-indigo-600 hover:text-indigo-900 mr-3"
                 >
                     <Edit className="w-4 h-4" />
-                </button>
+                </button> */}
                 <button
                     onClick={() => onDelete(leave.id)}
                     className="text-red-600 hover:text-red-900"
                 >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-6 h-6" />
                 </button>
             </td>
         </tr>

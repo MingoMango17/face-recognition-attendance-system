@@ -282,160 +282,6 @@ class EmployeeView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    # def put(self, request, employee_id=None):
-    #     """
-    #     Replace an existing employee completely. All fields are required.
-    #     URL should be: /employees/{employee_id}/
-    #     """
-    #     if not employee_id:
-    #         return Response(
-    #             {"error": "Employee ID is required"},
-    #             status=status.HTTP_400_BAD_REQUEST
-    #         )
-
-    #     try:
-    #         employee = Employee.objects.get(id=employee_id, is_active=True)
-    #     except Employee.DoesNotExist:
-    #         return Response(
-    #             {"error": "Employee not found"},
-    #             status=status.HTTP_404_NOT_FOUND
-    #         )
-
-    #     data = request.data
-
-    #     # Validate all required fields for PUT (complete replacement)
-    #     required_fields = [
-    #         "first_name",
-    #         "last_name",
-    #         "username",
-    #         "department",
-    #         "salary_type",
-    #         "base_salary",
-    #     ]
-
-    #     for field in required_fields:
-    #         if not data.get(field):
-    #             return Response(
-    #                 {"error": f"Missing required field: {field}"},
-    #                 status=status.HTTP_400_BAD_REQUEST,
-    #             )
-
-    #     # Extract data
-    #     first_name = data.get("first_name")
-    #     last_name = data.get("last_name")
-    #     username = data.get("username")
-    #     password = data.get("password")  # Optional for PUT
-    #     department = data.get("department")
-    #     salary_type = data.get("salary_type")
-    #     base_salary = data.get("base_salary")
-    #     deductions = data.get("deductions", [])  # Default to empty list
-    #     allowances = data.get("allowances", [])  # Default to empty list
-
-    #     try:
-    #         with transaction.atomic():
-    #             print(f"Replacing employee {employee_id}")
-
-    #             # Check if new username already exists (excluding current user)
-    #             if User.objects.filter(username=username).exclude(id=employee.user.id).exists():
-    #                 return Response(
-    #                     {"error": "Username already exists"},
-    #                     status=status.HTTP_400_BAD_REQUEST
-    #                 )
-
-    #             # Update User fields (required)
-    #             employee.user.first_name = first_name
-    #             employee.user.last_name = last_name
-    #             employee.user.username = username
-
-    #             # Update password only if provided
-    #             if password:
-    #                 employee.user.set_password(password)
-
-    #             employee.user.save()
-    #             print("User updated")
-
-    #             # Update Employee fields (required)
-    #             employee.department = department
-    #             employee.salary_type = salary_type
-    #             employee.base_salary = base_salary
-    #             employee.save()
-    #             print("Employee updated")
-
-    #             # Replace deductions completely
-    #             SalaryDeduction.objects.filter(employee=employee).delete()
-
-    #             if deductions:
-    #                 deductions_to_add = []
-    #                 for deduction in deductions:
-    #                     deduction_type = deduction.get("deduction_type")
-    #                     value = deduction.get("value")
-
-    #                     if not deduction_type or value is None:
-    #                         raise ValueError(
-    #                             "Invalid deduction data: missing deduction_type or value"
-    #                         )
-
-    #                     deductions_to_add.append(
-    #                         SalaryDeduction(
-    #                             deduction_type=deduction_type,
-    #                             value=value,
-    #                             employee=employee,
-    #                         )
-    #                     )
-
-    #                 if deductions_to_add:
-    #                     SalaryDeduction.objects.bulk_create(deductions_to_add)
-
-    #             print("Deductions replaced")
-
-    #             # Replace allowances completely
-    #             Allowance.objects.filter(employee=employee).delete()
-
-    #             if allowances:
-    #                 allowances_to_add = []
-    #                 for allowance in allowances:
-    #                     allowance_type = allowance.get("allowance_type")
-    #                     value = allowance.get("value")
-    #                     is_taxable = allowance.get("is_taxable", False)
-
-    #                     if not allowance_type or value is None:
-    #                         raise ValueError(
-    #                             "Invalid allowance data: missing allowance_type or value"
-    #                         )
-
-    #                     allowances_to_add.append(
-    #                         Allowance(
-    #                             allowance_type=allowance_type,
-    #                             value=value,
-    #                             employee=employee,
-    #                             is_taxable=is_taxable,
-    #                         )
-    #                     )
-
-    #                 if allowances_to_add:
-    #                     Allowance.objects.bulk_create(allowances_to_add)
-
-    #             print("Allowances replaced")
-
-    #             # Return updated employee data
-    #             serializer = EmployeeSerializer(employee)
-    #             return Response(
-    #                 {
-    #                     "message": "Employee replaced successfully",
-    #                     "employee": serializer.data
-    #                 },
-    #                 status=status.HTTP_200_OK
-    #             )
-
-    #     except ValueError as e:
-    #         print(f"Validation error: {e}")
-    #         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    #     except Exception as e:
-    #         print(f"Unexpected error: {e}")
-    #         return Response(
-    #             {"error": "An unexpected error occurred"},
-    #             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         )
     def delete(self, request, employee_id=None):
         """
         Soft delete an employee by setting is_active to False.
@@ -504,5 +350,47 @@ class AllowanceView(APIView):
         return Response({"error": "employee_id needed"})
 
 
-# class AddEmployeeView(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
+class LeaveView(APIView):
+    def get(self, request):
+        leaves = Leave.objects.all()
+
+        serializer = LeaveSerializer(leaves, many=True)
+        return Response(serializer.data, status=200)
+
+    def post(self, request):
+        data = request.data
+
+        employee = data.get("employee")
+        leave_type = data.get("leave_type")
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        details = data.get("details")
+
+        Leave.objects.create(
+            employee_id=employee,
+            leave_type=leave_type,
+            start_date=start_date,
+            end_date=end_date,
+            details=details,
+            is_approved=True,  # set to true alway
+        )
+
+        return Response({"message": "Leave is created"}, status=201)
+
+    def delete(self, request):
+        leave_id = request.query_params.get("leave_id")
+
+        print("deleting ", request)
+        if leave_id:
+            Leave.objects.get(id=leave_id).delete()
+            return Response({"Leave deleted"}, status=200)
+
+        return Response({"leave_id required"}, status=400)
+
+
+class AttendanceRecordView(APIView):
+    def get(self, request):
+        attendance = AttendanceRecord.objects.all()
+        serializer = AttendanceRecordSerializer(attendance, many=True)
+
+        return Response(serializer.data, status=200)

@@ -14,7 +14,7 @@ interface EmployeeFormData {
     salary: string;
     salary_type: "hourly" | "monthly";
     deductions: Array<{ type: number; amount: string }>;
-    allowances: Array<{ type: string; amount: string; taxable: boolean }>;
+    allowances: Array<{ type: number; amount: string; taxable: boolean }>;
 }
 
 interface Employee {

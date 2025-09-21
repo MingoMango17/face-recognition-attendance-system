@@ -1,7 +1,13 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+import pytz
 
 User = get_user_model()
+
+def manila_now():
+    manila_tz = pytz.timezone('Asia/Manila')
+    return timezone.now().astimezone(manila_tz)
 
 
 class Employee(models.Model):
@@ -34,7 +40,7 @@ class AttendanceRecord(models.Model):
         (TIME_OUT, "TIME OUT"),
     )
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(default=manila_now)
     attendance_type = models.IntegerField(
         choices=ATTENDANCE_TYPE, blank=False, null=False
     )

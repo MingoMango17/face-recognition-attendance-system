@@ -40,7 +40,7 @@ interface EmployeeFormData {
     salary: string;
     salary_type: "hourly" | "monthly";
     deductions: Array<{ type: number; amount: string }>;
-    allowances: Array<{ type: string; amount: string; taxable: boolean }>;
+    allowances: Array<{ type: number; amount: string; taxable: boolean }>;
 }
 
 const EmployeePage: React.FC = () => {
@@ -234,7 +234,7 @@ const EmployeePage: React.FC = () => {
         <Layout
             headerTitle="Employees"
             headerRightContent={headerRightContent}
-            showDateTime={false}
+            
         >
             <EmployeeModal
                 isOpen={isModalOpen}
@@ -245,7 +245,7 @@ const EmployeePage: React.FC = () => {
             />
 
             <div className="p-6">
-                <EmployeeStatsCards employees={employees} />
+                {/* <EmployeeStatsCards employees={employees} /> */}
 
                 <EmployeeSearchBar
                     searchTerm={searchTerm}

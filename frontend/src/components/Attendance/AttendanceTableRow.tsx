@@ -72,9 +72,9 @@ const AttendanceTableRow: React.FC<AttendanceTableRowProps> = ({
                         <div className="text-sm font-medium text-gray-900">
                             {attendance.employee.name}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        {/* <div className="text-sm text-gray-500">
                             {attendance.employee.department}
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </td>
@@ -85,7 +85,7 @@ const AttendanceTableRow: React.FC<AttendanceTableRowProps> = ({
                 {getTotalHoursDisplay()}
             </td>
 
-            <td className="px-6 py-4 whitespace-nowrap">
+            {/* <td className="px-6 py-4 whitespace-nowrap">
                 <span
                     className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         STATUS_COLORS[attendance.status]
@@ -93,9 +93,9 @@ const AttendanceTableRow: React.FC<AttendanceTableRowProps> = ({
                 >
                     {attendance.status}
                 </span>
-            </td>
+            </td> */}
 
-            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            {/* <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
                     onClick={() => onViewDetails(attendance)}
                     className="text-indigo-600 hover:text-indigo-900 mr-3"
@@ -110,7 +110,7 @@ const AttendanceTableRow: React.FC<AttendanceTableRowProps> = ({
                 >
                     <Edit className="w-4 h-4" />
                 </button>
-            </td>
+            </td> */}
         </tr>
     );
 };

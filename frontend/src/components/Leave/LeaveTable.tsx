@@ -8,7 +8,6 @@ interface LeaveTableProps {
     leaves: Leave[];
     searchTerm: string;
     onSearchChange: (value: string) => void;
-    onAddLeave: () => void;
     onEditLeave: (leave: Leave) => void;
     onDeleteLeave: (id: number) => void;
 }
@@ -17,7 +16,6 @@ const LeaveTable: React.FC<LeaveTableProps> = ({
     leaves,
     searchTerm,
     onSearchChange,
-    onAddLeave,
     onEditLeave,
     onDeleteLeave,
 }) => {
@@ -26,7 +24,6 @@ const LeaveTable: React.FC<LeaveTableProps> = ({
             <LeaveTableHeader
                 searchTerm={searchTerm}
                 onSearchChange={onSearchChange}
-                onAddLeave={onAddLeave}
             />
 
             <div className="overflow-x-auto">
@@ -48,9 +45,9 @@ const LeaveTable: React.FC<LeaveTableProps> = ({
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Days
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
-                            </th>
+                            </th> */}
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Actions
                             </th>

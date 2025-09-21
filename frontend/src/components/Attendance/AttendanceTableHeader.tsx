@@ -7,7 +7,6 @@ interface AttendanceTableHeaderProps {
     onSearchChange: (value: string) => void;
     selectedDate: string;
     onDateChange: (date: string) => void;
-    onAddRecord: () => void;
 }
 
 const AttendanceTableHeader: React.FC<AttendanceTableHeaderProps> = ({
@@ -15,7 +14,6 @@ const AttendanceTableHeader: React.FC<AttendanceTableHeaderProps> = ({
     onSearchChange,
     selectedDate,
     onDateChange,
-    onAddRecord,
 }) => {
     return (
         <div className="px-6 py-4 border-b border-gray-200">
@@ -43,14 +41,6 @@ const AttendanceTableHeader: React.FC<AttendanceTableHeaderProps> = ({
                         />
                     </div>
                 </div>
-
-                <button
-                    onClick={onAddRecord}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Record
-                </button>
             </div>
         </div>
     );
