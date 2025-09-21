@@ -154,6 +154,6 @@ CORS_ALLOW_CREDENTIALS = True
 AUTH_USER_MODEL = "custom_auth.User"
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=10),
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=1),
 }

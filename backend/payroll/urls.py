@@ -13,5 +13,11 @@ urlpatterns = [
     path("deductions/", DeductionView.as_view(), name="deductions"),
     path("allowances/", AllowanceView.as_view(), name="allowances"),
     path("leaves/", LeaveView.as_view(), name="leaves"),
-    path("attendance/", AttendanceRecordView.as_view(), name="attendances")
+    path("attendance/", AttendanceRecordView.as_view(), name="attendances"),
+    path("payslips/", PayslipView.as_view(), name="payslip-list"),
+    path("payslips/<int:payslip_id>/", PayslipView.as_view(), name="payslip-detail"),
+    # Payslip generation endpoints
+    path("payslips/generate/", PayslipGenerateView.as_view(), name="payslip-generate"),
+    # Statistics endpoint
+    path("payslips/stats/", PayslipStatsView.as_view(), name="payslip-stats"),
 ]

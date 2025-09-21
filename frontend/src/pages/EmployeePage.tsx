@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Layout from "../components/Layout";
 import { api } from "../utils/api";
 import EmployeeModal from "../components/Employee/EmployeeModal";
-import EmployeeStatsCards from "../components/Employee/EmployeeStatsCards";
+// import EmployeeStatsCards from "../components/Employee/EmployeeStatsCards";
 import EmployeeSearchBar from "../components/Employee/EmployeeSearchBar";
 import EmployeeTable from "../components/Employee/EmployeeTable";
 import EmployeePagination from "../components/Employee/EmployeePagination";
@@ -174,7 +174,6 @@ const EmployeePage: React.FC = () => {
                 await api.post("payroll/employees/", employeeData);
                 console.log("Employee added successfully");
             } else if (modalMode === "edit" && selectedEmployee) {
-                console.log('data', data)
                 // Update existing employee
                 const employeeData = {
                     first_name: data.first_name,

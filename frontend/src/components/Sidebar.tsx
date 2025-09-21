@@ -9,6 +9,7 @@ import {
     ChevronRight,
     UserPlus,
     UserStar,
+    CircleDollarSign,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -82,6 +83,12 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         //     icon: <Settings className="w-5 h-5" />,
         //     path: "/settings",
         // },
+        {
+            id: "payslip",
+            label: "Payslip",
+            icon: <CircleDollarSign className="w-5 h-5"/>,
+            path: "/payslip",
+        }
     ];
 
     const toggleExpanded = (itemId: string) => {

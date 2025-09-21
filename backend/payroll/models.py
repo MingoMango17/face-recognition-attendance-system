@@ -5,8 +5,9 @@ import pytz
 
 User = get_user_model()
 
+
 def manila_now():
-    manila_tz = pytz.timezone('Asia/Manila')
+    manila_tz = pytz.timezone("Asia/Manila")
     return timezone.now().astimezone(manila_tz)
 
 
@@ -26,7 +27,7 @@ class Employee(models.Model):
     department = models.CharField(max_length=128, null=True, blank=True)
     details = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    
+
     def __str__(self):
         return f"{self.user.get_full_name()}"
 
@@ -51,12 +52,14 @@ class Leave(models.Model):
     SICK = 1
     MATERNITY = 2
     LEAVE_WITHOUT_PAY = 3
+    HALF_DAY_LEAVE = 4
 
     LEAVE_TYPES = (
         (PAID_LEAVE, "PAID_LEAVE"),
         (SICK, "SICK"),
         (MATERNITY, "MATERNITY"),
         (LEAVE_WITHOUT_PAY, "LEAVE WITHOUT PAY"),
+        (HALF_DAY_LEAVE, "HALF DAY LEAVE"),
     )
 
     employee = models.ForeignKey(
@@ -70,10 +73,10 @@ class Leave(models.Model):
 
 
 class Allowance(models.Model):
-    MEAL = 1
-    TRANSPORTATION = 2
-    MEDICAL = 3
-    BONUS = 4
+    MEAL = 0
+    TRANSPORTATION = 1
+    MEDICAL = 2
+    BONUS = 3
 
     ALLOWANCE_TYPE = (
         (MEAL, "MEAL ALLOWANCE"),
@@ -96,14 +99,15 @@ class Allowance(models.Model):
     def __str__(self):
         return f"Allowance for {self.employee.user.username}"
 
+
 class SalaryDeduction(models.Model):
-    TAX = 1
-    HEALTH = 2
-    SOCIAL_SECURITY = 3
-    OTHERS = 4
+    LOAN = 0
+    HEALTH = 1
+    SOCIAL_SECURITY = 2
+    OTHERS = 3
 
     DEDUCTION_TYPE = (
-        (TAX, "TAX DEDUCTION"),
+        (LOAN, "LOAN"),
         (HEALTH, "HEALTH INSURANCE"),
         (SOCIAL_SECURITY, "SOCIAL SECURITY"),
         (OTHERS, "OTHERS"),
@@ -133,6 +137,18 @@ class Payslip(models.Model):
         (CANCELLED, "Cancelled"),
     )
 
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    SEMI_MONTHLY = "semi_monthly"
+    MONTHLY = "monthly"
+
+    PAYFREQUENCY_CHOICES = (
+        (WEEKLY, "Weekly"),
+        (BIWEEKLY, "Biweekly"),
+        (SEMI_MONTHLY, "Semi Monthly"),
+        (MONTHLY, "Monthly"),
+    )
+
     employee = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="payslips"
     )
@@ -146,6 +162,7 @@ class Payslip(models.Model):
     # Final amounts
     gross_salary = models.DecimalField(max_digits=10, decimal_places=2)
     net_salary = models.DecimalField(max_digits=10, decimal_places=2)
+    withholding_tax = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
 
     # Status and metadata
     status = models.IntegerField(choices=STATUS_CHOICES, default=DRAFT)
@@ -157,19 +174,27 @@ class Payslip(models.Model):
     generated_at = models.DateTimeField(auto_now_add=True)
     approved_at = models.DateTimeField(null=True, blank=True)
 
+    pay_frequency = models.CharField(choices=PAYFREQUENCY_CHOICES, default=MONTHLY)
+
     class Meta:
-        unique_together = ("employee", "start_date", "end_date") 
+        unique_together = ("employee", "start_date", "end_date")
         ordering = ["employee__user__last_name"]
 
     def __str__(self):
         return f"Payslip - {self.employee.user.get_full_name()}"
 
+
 class PayslipAllowance(models.Model):
-    payslip = models.ForeignKey(Payslip, on_delete=models.CASCADE, related_name="payslip_allowances")
+    payslip = models.ForeignKey(
+        Payslip, on_delete=models.CASCADE, related_name="payslip_allowances"
+    )
     allowance_type = models.IntegerField(choices=Allowance.ALLOWANCE_TYPE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
 
+
 class PayslipDeduction(models.Model):
-    payslip = models.ForeignKey(Payslip, on_delete=models.CASCADE, related_name="payslip_deductions")
+    payslip = models.ForeignKey(
+        Payslip, on_delete=models.CASCADE, related_name="payslip_deductions"
+    )
     deduction_type = models.IntegerField(choices=SalaryDeduction.DEDUCTION_TYPE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)

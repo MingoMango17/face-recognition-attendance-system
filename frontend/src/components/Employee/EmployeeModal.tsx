@@ -65,7 +65,7 @@ const EmployeeModal: React.FC<EmployeeModalProps> = ({
     // Constants
     const departments = ["Engineering", "Marketing", "HR", "Finance", "Sales"];
     const deductionTypes = [
-        "Tax",
+        "Loan",
         "Health Insurance",
         "Social Security",
         "Other",

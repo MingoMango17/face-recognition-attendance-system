@@ -12,17 +12,25 @@ import { api } from "../utils/api";
 const AttendancePage: React.FC = () => {
     const { userData, logout } = useAuth();
     const navigate = useNavigate();
-    const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [attendanceRecords, setAttendanceRecords] = useState<
+        AttendanceRecord[]
+    >([]);
+    const [selectedDate, setSelectedDate] = useState(
+        new Date().toISOString().split("T")[0]
+    );
     const [searchTerm, setSearchTerm] = useState("");
     const [showDetailsModal, setShowDetailsModal] = useState(false);
-    const [selectedAttendance, setSelectedAttendance] = useState<DailyAttendance | null>(null);
+    const [selectedAttendance, setSelectedAttendance] =
+        useState<DailyAttendance | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const fetchAttendance = async () => {
+    const fetchAttendance = async (date?: string) => {
         try {
             setLoading(true);
-            const request = await api.get("payroll/attendance/");
+            const dateParam = date || selectedDate;
+            const request = await api.get(
+                `payroll/attendance/?date=${dateParam}`
+            );
             setAttendanceRecords(request.data);
         } catch (error) {
             console.error("Error fetching attendance:", error);
@@ -33,7 +41,7 @@ const AttendancePage: React.FC = () => {
 
     useEffect(() => {
         fetchAttendance();
-    }, []);
+    }, [selectedDate]); // Re-fetch when selectedDate changes
 
     const handleLogout = async () => {
         await logout();
@@ -48,6 +56,11 @@ const AttendancePage: React.FC = () => {
     const handleEditRecord = (attendance: DailyAttendance) => {
         // TODO: Implement edit functionality
         console.log("Edit attendance:", attendance);
+    };
+
+    const handleDateChange = (newDate: string) => {
+        setSelectedDate(newDate);
+        // fetchAttendance will be called automatically by useEffect
     };
 
     // Header content
@@ -78,10 +91,15 @@ const AttendancePage: React.FC = () => {
 
     if (loading) {
         return (
-            <Layout headerTitle="Attendance" headerRightContent={headerRightContent}>
+            <Layout
+                headerTitle="Attendance"
+                headerRightContent={headerRightContent}
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="text-center py-8">
-                        <p className="text-gray-500">Loading attendance data...</p>
+                        <p className="text-gray-500">
+                            Loading attendance data...
+                        </p>
                     </div>
                 </div>
             </Layout>
@@ -89,14 +107,17 @@ const AttendancePage: React.FC = () => {
     }
 
     return (
-        <Layout headerTitle="Attendance" headerRightContent={headerRightContent}>
+        <Layout
+            headerTitle="Attendance"
+            headerRightContent={headerRightContent}
+        >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <AttendanceTable
                     attendanceRecords={attendanceRecords}
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
                     selectedDate={selectedDate}
-                    onDateChange={setSelectedDate}
+                    onDateChange={handleDateChange}
                     onViewDetails={handleViewDetails}
                     onEditRecord={handleEditRecord}
                 />

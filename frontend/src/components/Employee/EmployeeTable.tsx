@@ -57,7 +57,7 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
         if (type === 1) {
             return `PHP${amount.toFixed(2)}/hr`;
         } else {
-            return `PHP${amount.toLocaleString()}/year`;
+            return `PHP${amount.toLocaleString()}/month`;
         }
     };
 
@@ -171,11 +171,11 @@ const EmployeeTable: React.FC<EmployeeTableProps> = ({
                                                 {employee.user.first_name}{" "}
                                                 {employee.user.last_name}
                                             </div>
-                                            {employee.user?.email && (
+                                            {/* {employee.user?.email && (
                                                 <div className="text-sm text-gray-500">
                                                     {employee.user.email}
                                                 </div>
-                                            )}
+                                            )} */}
                                         </div>
                                     </div>
                                 </td>

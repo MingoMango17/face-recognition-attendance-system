@@ -49,9 +49,8 @@ export const processAttendanceRecords = (
     const employeeRecords = new Map<number, AttendanceRecord[]>();
 
     records.forEach((record) => {
-        const recordDate = new Date(record.timestamp)
-            .toISOString()
-            .split("T")[0];
+        // Fix: Extract date part directly to avoid timezone issues
+        const recordDate = record.timestamp.split("T")[0];
         if (recordDate === targetDate) {
             const employeeId = record.employee.id;
             if (!employeeRecords.has(employeeId)) {
@@ -78,6 +77,10 @@ export const processAttendanceRecords = (
         empRecords.forEach((record) => {
             if (record.attendance_type === 1) {
                 // TIME_IN
+                // If there's already an open session, close it first (handle missing TIME_OUT)
+                if (currentSession) {
+                    sessions.push(currentSession);
+                }
                 // Start new session
                 currentSession = {
                     time_in: record.timestamp,
@@ -105,11 +108,8 @@ export const processAttendanceRecords = (
         // Determine status
         const status = determineStatus(sessions, targetDate);
 
-        const firstRecord = empRecords[0];
-        const lastRecord = empRecords[empRecords.length - 1];
-
         dailyAttendance.push({
-            employee: firstRecord.employee,
+            employee: empRecords[0].employee, // Use first record's employee data
             date: targetDate,
             sessions,
             total_hours: totalMinutes / 60,

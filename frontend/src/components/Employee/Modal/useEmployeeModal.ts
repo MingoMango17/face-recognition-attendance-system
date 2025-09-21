@@ -36,7 +36,7 @@ interface UseEmployeeModalProps {
     isOpen: boolean;
 }
 
-const deductionTypes = ["Tax", "Health Insurance", "Social Security", "Other"];
+const deductionTypes = ["Loan", "Health Insurance", "Social Security", "Other"];
 const allowanceTypes = ["Meal", "Transportation", "Medical", "Bonus"];
 
 export const useEmployeeModal = ({
@@ -127,7 +127,7 @@ export const useEmployeeModal = ({
                         type:
                             allowance.type ||
                             allowance.allowance_type ||
-                            "Meal",
+                            "0",
                         amount: allowance.value?.toString() || "0",
                         taxable: allowance.taxable || true,
                     })

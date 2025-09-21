@@ -37,4 +37,5 @@ export const LEAVE_TYPES = {
     1: { label: "SICK", color: "bg-yellow-100 text-yellow-800" },
     2: { label: "MATERNITY", color: "bg-pink-100 text-pink-800" },
     3: { label: "LEAVE WITHOUT PAY", color: "bg-gray-100 text-gray-800" },
+    4: { label: "HALF DAY LEAVE", color: "bg-blue-100 text-blue-800"}
 };
