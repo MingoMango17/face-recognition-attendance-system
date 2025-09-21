@@ -8,6 +8,7 @@ import EmployeePage from "./pages/EmployeePage";
 import LeavePage from "./pages/LeavePage";
 import AttendancePage from "./pages/AttendancePage";
 import PayslipPage from "./pages/PayslipPage";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 
 function App() {
     return (
@@ -57,6 +58,15 @@ function App() {
                         element={
                             <ProtectedRoute>
                                 <PayslipPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/password"
+                        element={
+                            <ProtectedRoute>
+                                <ChangePasswordPage />
                             </ProtectedRoute>
                         }
                     />

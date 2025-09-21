@@ -121,3 +121,40 @@ def verify_token(request):
         },
         status=status.HTTP_200_OK,
     )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_admin_password(request):
+    data = request.data
+    current_password = data.get("current_password")
+    new_password = data.get("new_password")
+
+    user = request.user
+
+    # Validate current password
+    if not user.check_password(current_password):
+        return Response(
+            {"current_password": "Current password is incorrect"}, status=400
+        )
+
+    # Validate new password
+    if not new_password:
+        return Response({"new_password": "New password is required"}, status=400)
+
+    if len(new_password) < 8:
+        return Response(
+            {"new_password": "Password must be at least 8 characters long"}, status=400
+        )
+
+    if current_password == new_password:
+        return Response(
+            {"new_password": "New password must be different from current password"},
+            status=400,
+        )
+
+    # Change password
+    user.set_password(new_password)
+    user.save()  # This was missing!
+
+    return Response({"message": "Password changed successfully"}, status=200)

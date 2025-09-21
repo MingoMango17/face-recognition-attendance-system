@@ -23,6 +23,7 @@ interface Employee {
     department: string;
     details: string;
     is_active: boolean;
+    photo?: string; // Add photo field
 }
 
 interface EmployeeFilters {
@@ -41,6 +42,7 @@ interface EmployeeFormData {
     salary_type: "hourly" | "monthly";
     deductions: Array<{ type: number; amount: string }>;
     allowances: Array<{ type: number; amount: string; taxable: boolean }>;
+    photo?: string; // Add photo field
 }
 
 const EmployeePage: React.FC = () => {
@@ -88,7 +90,7 @@ const EmployeePage: React.FC = () => {
             const matchesSearch =
                 fullName.includes(searchTerm.toLowerCase()) ||
                 // employee.user.email
-                //     .toLowerCase()
+                //     ?.toLowerCase()
                 //     .includes(searchTerm.toLowerCase()) ||
                 employee.department
                     .toLowerCase()
@@ -169,6 +171,7 @@ const EmployeePage: React.FC = () => {
                     base_salary: data.salary,
                     deductions: data.deductions,
                     allowances: data.allowances,
+                    photo: data.photo, // Include photo data
                 };
 
                 await api.post("payroll/employees/", employeeData);
@@ -185,6 +188,7 @@ const EmployeePage: React.FC = () => {
                     base_salary: data.salary,
                     deductions: data.deductions,
                     allowances: data.allowances,
+                    photo: data.photo, // Include photo data
                 };
 
                 await api.patch(
@@ -230,11 +234,7 @@ const EmployeePage: React.FC = () => {
     );
 
     return (
-        <Layout
-            headerTitle="Employees"
-            headerRightContent={headerRightContent}
-            
-        >
+        <Layout headerTitle="Employees" headerRightContent={headerRightContent}>
             <EmployeeModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}

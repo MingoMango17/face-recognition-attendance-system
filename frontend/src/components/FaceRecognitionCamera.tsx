@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { Camera, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import {
+    Camera,
+    Clock,
+    CheckCircle,
+    AlertCircle,
+    Lock,
+    Eye,
+    EyeOff,
+} from "lucide-react";
+import { api } from "../utils/api";
 
 // Type definitions
 interface AttendanceStatus {
@@ -10,6 +19,7 @@ interface AttendanceStatus {
 interface AttendanceRequest {
     image: string;
     timestamp: string;
+    password: string;
 }
 
 interface AttendanceResponse {
@@ -35,27 +45,32 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
     const [attendanceStatus, setAttendanceStatus] =
         useState<AttendanceStatus | null>(null);
 
+    // Password states
+    const [password, setPassword] = useState<string>("");
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [passwordError, setPasswordError] = useState<string>("");
+
     // Refs
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const streamRef = useRef<MediaStream | null>(null); // Store stream reference
-    const mountedRef = useRef<boolean>(true); // Track if component is mounted
+    const streamRef = useRef<MediaStream | null>(null);
+    const mountedRef = useRef<boolean>(true);
 
     // Comprehensive camera cleanup function
     const stopCamera = useCallback((): void => {
-        console.log('Stopping camera...');
-        
+        console.log("Stopping camera...");
+
         try {
-            // Stop all tracks from the stored stream reference
             if (streamRef.current) {
-                streamRef.current.getTracks().forEach((track: MediaStreamTrack) => {
-                    track.stop();
-                    console.log(`Stopped ${track.kind} track`);
-                });
+                streamRef.current
+                    .getTracks()
+                    .forEach((track: MediaStreamTrack) => {
+                        track.stop();
+                        console.log(`Stopped ${track.kind} track`);
+                    });
                 streamRef.current = null;
             }
 
-            // Also check video element's srcObject
             if (videoRef.current && videoRef.current.srcObject) {
                 const videoStream = videoRef.current.srcObject as MediaStream;
                 videoStream.getTracks().forEach((track: MediaStreamTrack) => {
@@ -64,97 +79,92 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
                 videoRef.current.srcObject = null;
             }
 
-            // Update state only if component is still mounted
             if (mountedRef.current) {
                 setIsStreaming(false);
             }
         } catch (error) {
-            console.error('Error stopping camera:', error);
+            console.error("Error stopping camera:", error);
         }
     }, []);
 
     const startCamera = useCallback(async (): Promise<void> => {
-        // Don't start if component is unmounted
         if (!mountedRef.current) return;
 
         try {
-            // Stop any existing stream first
             stopCamera();
 
-            console.log('Starting camera...');
+            console.log("Starting camera...");
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    width: 640, 
+                video: {
+                    width: 640,
                     height: 480,
-                    facingMode: 'user' // Prefer front camera
+                    facingMode: "user",
                 },
             });
 
-            // Store stream reference for cleanup
             streamRef.current = stream;
 
             if (videoRef.current && mountedRef.current) {
                 videoRef.current.srcObject = stream;
                 setIsStreaming(true);
-                console.log('Camera started successfully');
+                console.log("Camera started successfully");
             } else {
-                // If video ref is not available, stop the stream
-                stream.getTracks().forEach(track => track.stop());
+                stream.getTracks().forEach((track) => track.stop());
             }
         } catch (err) {
             console.error("Error accessing camera:", err);
             if (mountedRef.current) {
                 setAttendanceStatus({
                     type: "error",
-                    message: "Camera access denied. Please allow camera permissions and refresh the page.",
+                    message:
+                        "Camera access denied. Please allow camera permissions and refresh the page.",
                 });
             }
         }
     }, [stopCamera]);
 
-    // Effect for mounting/unmounting
     useEffect(() => {
         mountedRef.current = true;
         startCamera();
 
-        // Cleanup function
         return () => {
-            console.log('Component unmounting, cleaning up camera...');
+            console.log("Component unmounting, cleaning up camera...");
             mountedRef.current = false;
             stopCamera();
         };
     }, [startCamera, stopCamera]);
 
-    // Additional cleanup on page visibility change
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                console.log('Page hidden, stopping camera');
+                console.log("Page hidden, stopping camera");
                 stopCamera();
             } else if (mountedRef.current) {
-                console.log('Page visible, restarting camera');
+                console.log("Page visible, restarting camera");
                 startCamera();
             }
         };
 
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-        
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
         return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange
+            );
         };
     }, [startCamera, stopCamera]);
 
-    // Cleanup on beforeunload (when user navigates away)
     useEffect(() => {
         const handleBeforeUnload = () => {
-            console.log('Page unloading, stopping camera');
+            console.log("Page unloading, stopping camera");
             stopCamera();
         };
 
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
         return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener("beforeunload", handleBeforeUnload);
         };
     }, [stopCamera]);
 
@@ -176,14 +186,36 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
         return imageData;
     }, []);
 
+    // Validate password
+    const validatePassword = (pwd: string): boolean => {
+        // if (pwd.length < 4) {
+        //     setPasswordError("Password must be at least 4 characters");
+        //     return false;
+        // }
+        setPasswordError("");
+        return true;
+    };
+
+    // Clear error when password changes
+    useEffect(() => {
+        if (passwordError && password.length >= 4) {
+            setPasswordError("");
+        }
+    }, [password, passwordError]);
+
+    // Handle mark attendance
     const handleMarkAttendance = async (): Promise<void> => {
-        if (!mountedRef.current) return; // Don't process if unmounted
+        if (!mountedRef.current) return;
+
+        // Validate password first
+        if (!validatePassword(password)) {
+            return;
+        }
 
         setIsProcessing(true);
         setAttendanceStatus(null);
 
         try {
-            // Capture image
             const imageData = captureImage();
 
             if (!imageData) {
@@ -193,75 +225,115 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
             // Simulate processing time
             await new Promise<void>((resolve) => setTimeout(resolve, 2000));
 
-            // Check if still mounted before continuing
             if (!mountedRef.current) return;
 
-            // Prepare request payload
             const requestPayload: AttendanceRequest = {
                 image: imageData,
                 timestamp: new Date().toISOString(),
+                password: password,
             };
 
-            // Send to backend for facial recognition
-            const response = await fetch(
-                "http://127.0.0.1:8000/api/face/recognize/",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(requestPayload),
-                }
+            // const response = await fetch(
+            //     "http://127.0.0.1:8000/api/face/recognize/",
+            //     {
+            //         method: "POST",
+            //         headers: {
+            //             "Content-Type": "application/json",
+            //         },
+            //         body: JSON.stringify(requestPayload),
+            //     }
+            // );
+            const response = await api.post(
+                "payroll/mark-attendance/",
+                requestPayload
             );
 
-            if (!response.ok) {
-                throw new Error("Network response was not ok");
-            }
+            // if (!response.ok) {
+            //     throw new Error("Network response was not ok");
+            // }
 
-            const result: AttendanceResponse = await response.json();
+            const result: AttendanceResponse = response.data;
 
-            // Only update state if component is still mounted
             if (!mountedRef.current) return;
 
-            if (result.data.message === "no similar face found") {
+            // if (result.data.message === "no similar face found") {
+            //     setAttendanceStatus({
+            //         type: "error",
+            //         message:
+            //             "Face not recognized. Please try again or contact admin.",
+            //     });
+            // } else if (result.data.message === "invalid password") {
+            //     setAttendanceStatus({
+            //         type: "error",
+            //         message: "Invalid password. Please try again.",
+            //     });
+            //     setPasswordError("Invalid password");
+            // } else {
+            //     setAttendanceStatus({
+            //         type: "success",
+            //         message: `Attendance marked successfully! Welcome ${
+            //             result.data.employeeName || "to work"
+            //         }.`,
+            //     });
+            //     // Clear password on success
+            //     setPassword("");
+            // }
+            if (response.status === 400) {
                 setAttendanceStatus({
                     type: "error",
-                    message:
-                        "Face not recognized. Please try again or contact admin.",
+                    message: result.error,
                 });
             } else {
                 setAttendanceStatus({
                     type: "success",
-                    message: "Attendance marked successfully! Welcome to work.",
+                    message: result.message,
                 });
             }
         } catch (error) {
-            console.log("Attendance marking error: ", error);
+            console.log("Attendance marking error: ", error.response.data.error);
             if (mountedRef.current) {
                 setAttendanceStatus({
                     type: "error",
-                    message:
-                        "Unable to detect a face. Please move to a well-lit area and ensure only one person is visible in the camera frame",
+                    message: error.response.data.error,
                 });
             }
         } finally {
             if (mountedRef.current) {
                 setIsProcessing(false);
             }
+            setPassword("");
+        }
+    };
+
+    // Handle Enter key press in password input
+    const handlePasswordKeyPress = (
+        e: React.KeyboardEvent<HTMLInputElement>
+    ): void => {
+        if (
+            e.key === "Enter" &&
+            password.trim() &&
+            !isProcessing &&
+            isStreaming
+        ) {
+            handleMarkAttendance();
         }
     };
 
     return (
-        <div className={`bg-white rounded-lg shadow-sm border p-6 ${className}`}>
+        <div
+            className={`bg-white rounded-lg shadow-sm border p-6 ${className}`}
+        >
             <div className="flex items-center space-x-2 mb-4">
                 <Camera className="w-5 h-5 text-purple-600" />
-                <h2 className="text-lg font-medium text-gray-900">Camera</h2>
-                {/* Debug info */}
+                <h2 className="text-lg font-medium text-gray-900">
+                    Secure Camera Attendance
+                </h2>
                 <span className="text-xs text-gray-500">
-                    {isStreaming ? '🟢 Active' : '🔴 Inactive'}
+                    {isStreaming ? "🟢 Active" : "🔴 Inactive"}
                 </span>
             </div>
 
+            {/* Camera Section */}
             <div className="relative bg-gray-900 rounded-lg overflow-hidden aspect-video mb-6">
                 <video
                     ref={videoRef}
@@ -281,14 +353,68 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
 
                 {/* Overlay for face detection area */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="border-2 border-purple-400 border-dashed rounded-lg w-64 h-48 flex items-center justify-center"></div>
+                    <div className="border-2 border-purple-400 border-dashed rounded-lg w-64 h-48 flex items-center justify-center">
+                        {/* <div className="text-purple-400 text-sm font-medium">
+                            Position your face here
+                        </div> */}
+                    </div>
                 </div>
+            </div>
+
+            {/* Password Input Section */}
+            <div className="mb-6">
+                <label
+                    htmlFor="attendance-password"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                    <div className="flex items-center space-x-2">
+                        <Lock className="w-4 h-4 text-gray-500" />
+                        <span>Security Password</span>
+                    </div>
+                </label>
+                <div className="relative">
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        id="attendance-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onKeyPress={handlePasswordKeyPress}
+                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent pr-12 text-lg ${
+                            passwordError
+                                ? "border-red-300 focus:ring-red-500"
+                                : "border-gray-300"
+                        }`}
+                        placeholder="Enter your password"
+                        disabled={isProcessing}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                        disabled={isProcessing}
+                    >
+                        {showPassword ? (
+                            <EyeOff className="w-5 h-5" />
+                        ) : (
+                            <Eye className="w-5 h-5" />
+                        )}
+                    </button>
+                </div>
+                {passwordError && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center space-x-1">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>{passwordError}</span>
+                    </p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                    Press Enter or click the button below to mark attendance
+                </p>
             </div>
 
             {/* Mark Attendance Button */}
             <button
                 onClick={handleMarkAttendance}
-                disabled={isProcessing || !isStreaming}
+                disabled={isProcessing || !isStreaming || !password.trim()}
                 className="w-full bg-purple-600 text-white py-4 px-6 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center space-x-3 text-lg font-medium"
                 type="button"
             >
@@ -299,7 +425,7 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
                     </>
                 ) : (
                     <>
-                        <Clock className="w-5 h-5" />
+                        <Lock className="w-5 h-5" />
                         <span>Mark Attendance</span>
                     </>
                 )}

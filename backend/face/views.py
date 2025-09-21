@@ -38,7 +38,7 @@ class FaceRecognitionView(APIView):
                 image
             )
 
-            similar_results = facedb.check_similar(embeddings=embed_img, threshold=99)
+            similar_results = facedb.check_similar(embeddings=embed_img, threshold=90)
 
             if similar_results and similar_results[0]:
                 return Response(

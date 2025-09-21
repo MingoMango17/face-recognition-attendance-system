@@ -10,6 +10,7 @@ import {
     UserPlus,
     UserStar,
     CircleDollarSign,
+    Key,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -86,9 +87,15 @@ const Sidebar: React.FC<SidebarProps> = ({ className = "" }) => {
         {
             id: "payslip",
             label: "Payslip",
-            icon: <CircleDollarSign className="w-5 h-5"/>,
+            icon: <CircleDollarSign className="w-5 h-5" />,
             path: "/payslip",
-        }
+        },
+        {
+            id: "password",
+            label: "Password",
+            icon: <Key className="w-5 h-5" />,
+            path: "/password",
+        },
     ];
 
     const toggleExpanded = (itemId: string) => {

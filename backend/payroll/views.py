@@ -15,14 +15,44 @@ from .models import (
 from .serializers import PayslipSerializer
 import json
 
-from django.db.models import Q, Sum, Count
+from django.db.models import Count, Sum, Avg, Q, F
 from django.utils import timezone
 from datetime import datetime
 from decimal import Decimal
 from django.db import transaction
+from django.contrib.auth import authenticate
 
 # import calendar
+from io import BytesIO
+from PIL import Image
+import base64
 from datetime import timedelta
+
+from .services import get_facedb
+
+facedb = get_facedb()
+
+
+def process_image(image):
+    try:
+        if image.startswith("data:image"):
+            # Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+            image = image.split(",")[1]
+
+        # Decode base64 to bytes
+        image_bytes = base64.b64decode(image)
+
+        # Convert to PIL Image if your embedding function expects that
+        image = Image.open(BytesIO(image_bytes))
+
+        return image
+        # id = facedb.add(img=image, name=name)
+        # if id:
+        #     return id
+
+        raise ValueError("No id made from the db")
+    except Exception as e:
+        print(f"Error processing image: {str(e)}")  # For debugging
 
 
 class EmployeeView(APIView):
@@ -62,6 +92,14 @@ class EmployeeView(APIView):
         deductions = data.get("deductions", [])  # Default to empty list
         allowances = data.get("allowances", [])  # Default to empty list
 
+        photo = data.get("photo")
+
+        if not photo:
+            return Response(
+                {"error": {"message": "image is required"}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
             with transaction.atomic():
 
@@ -78,9 +116,12 @@ class EmployeeView(APIView):
                     password=password,
                 )
 
+                image = process_image(photo)
+
+                id = facedb.add(image, name=username)
                 employee = Employee.objects.create(
                     user=user,
-                    # department=department,
+                    embedded_picture_id=id,
                     salary_type=salary_type,
                     base_salary=base_salary,
                 )
@@ -413,6 +454,7 @@ class AttendanceRecordView(APIView):
 
         return Response(serializer.data, status=200)
 
+
 class PayslipView(APIView):
     """
     Main payslip view for listing, creating, updating, and deleting payslips
@@ -605,12 +647,18 @@ class PayslipGenerateView(APIView):
     # These are annual brackets - will be converted based on pay frequency
     WITHHOLDING_TAX_BRACKETS = [
         # (min_income, max_income, base_tax, tax_rate, excess_over)
-        (0, 250000, 0, 0.00, 0),                    # 0% for income up to 250,000
-        (250000, 400000, 0, 0.20, 250000),         # 20% for excess over 250,000
-        (400000, 800000, 30000, 0.25, 400000),     # 25% for excess over 400,000
-        (800000, 2000000, 130000, 0.30, 800000),   # 30% for excess over 800,000
-        (2000000, 8000000, 490000, 0.32, 2000000), # 32% for excess over 2,000,000
-        (8000000, float('inf'), 2410000, 0.35, 8000000), # 35% for excess over 8,000,000
+        (0, 250000, 0, 0.00, 0),  # 0% for income up to 250,000
+        (250000, 400000, 0, 0.20, 250000),  # 20% for excess over 250,000
+        (400000, 800000, 30000, 0.25, 400000),  # 25% for excess over 400,000
+        (800000, 2000000, 130000, 0.30, 800000),  # 30% for excess over 800,000
+        (2000000, 8000000, 490000, 0.32, 2000000),  # 32% for excess over 2,000,000
+        (
+            8000000,
+            float("inf"),
+            2410000,
+            0.35,
+            8000000,
+        ),  # 35% for excess over 8,000,000
     ]
 
     def post(self, request):
@@ -705,7 +753,7 @@ class PayslipGenerateView(APIView):
         if errors:
             response_data["errors"] = errors
 
-        return Response(response_data, status=400)
+        return Response(response_data, status=200)
 
     def _calculate_payslip_amounts(self, payslip, pay_frequency="monthly"):
         """Calculate gross and net salary for a payslip based on pay frequency"""
@@ -756,7 +804,9 @@ class PayslipGenerateView(APIView):
         )
 
         # Calculate net salary (gross - deductions - withholding tax)
-        payslip.net_salary = payslip.gross_salary - total_deductions - payslip.withholding_tax
+        payslip.net_salary = (
+            payslip.gross_salary - total_deductions - payslip.withholding_tax
+        )
 
     def _calculate_withholding_tax(self, gross_salary, pay_frequency, employee):
         """
@@ -765,37 +815,43 @@ class PayslipGenerateView(APIView):
         """
         # Convert gross salary to annual amount for tax calculation
         annual_gross = self._convert_to_annual_amount(gross_salary, pay_frequency)
-        
+
         # Get year-to-date earnings to determine proper tax bracket
         # This is important for progressive tax calculation
         ytd_gross = self._get_ytd_gross_salary(employee, gross_salary)
-        
+
         print(f"Annual gross: {annual_gross}, YTD gross: {ytd_gross}")
 
         # Calculate annual withholding tax using progressive brackets
         annual_tax = self._calculate_progressive_tax(annual_gross)
-        
+
         # Convert back to pay period amount
         period_tax = self._convert_annual_to_pay_period(annual_tax, pay_frequency)
-        
+
         # Ensure tax is not negative
         return max(Decimal("0"), period_tax)
 
     def _calculate_progressive_tax(self, annual_income):
         """Calculate tax using Philippine progressive tax brackets"""
         total_tax = Decimal("0")
-        
-        for min_income, max_income, base_tax, tax_rate, excess_over in self.WITHHOLDING_TAX_BRACKETS:
+
+        for (
+            min_income,
+            max_income,
+            base_tax,
+            tax_rate,
+            excess_over,
+        ) in self.WITHHOLDING_TAX_BRACKETS:
             if annual_income <= min_income:
                 break
-                
+
             if annual_income <= max_income:
                 # Income falls within this bracket
                 taxable_excess = annual_income - excess_over
                 bracket_tax = base_tax + (taxable_excess * Decimal(str(tax_rate)))
                 total_tax = bracket_tax
                 break
-            elif annual_income > max_income and max_income != float('inf'):
+            elif annual_income > max_income and max_income != float("inf"):
                 # Income exceeds this bracket, continue to next
                 continue
             else:
@@ -804,7 +860,7 @@ class PayslipGenerateView(APIView):
                 bracket_tax = base_tax + (taxable_excess * Decimal(str(tax_rate)))
                 total_tax = bracket_tax
                 break
-        
+
         return total_tax
 
     def _convert_to_annual_amount(self, amount, pay_frequency):
@@ -835,19 +891,17 @@ class PayslipGenerateView(APIView):
         This helps ensure proper tax bracket application
         """
         from django.db.models import Sum
-        
+
         current_year = datetime.now().year
-        
+
         ytd_payslips = Payslip.objects.filter(
             employee=employee,
             start_date__year=current_year,
-            status__in=[Payslip.APPROVED, Payslip.PAID]
-        ).aggregate(
-            total_gross=Sum('gross_salary')
-        )
-        
-        ytd_gross = ytd_payslips['total_gross'] or Decimal("0")
-        
+            status__in=[Payslip.APPROVED, Payslip.PAID],
+        ).aggregate(total_gross=Sum("gross_salary"))
+
+        ytd_gross = ytd_payslips["total_gross"] or Decimal("0")
+
         # Add current payslip gross
         return ytd_gross + current_gross
 
@@ -939,6 +993,7 @@ class PayslipGenerateView(APIView):
             "days_worked": Decimal(str(days_worked)),
         }
 
+
 class PayslipStatsView(APIView):
     """
     Get payslip statistics and summary data
@@ -982,3 +1037,415 @@ class PayslipStatsView(APIView):
                 stats[key] = 0
 
         return Response(stats, status=200)
+
+
+class DashboardView(APIView):
+    """
+    Dashboard view providing comprehensive payroll analytics and metrics
+    """
+
+    def get(self, request):
+        """Get dashboard data with optional date filtering"""
+        # Get date parameter (defaults to today)
+        date_param = request.query_params.get("date")
+
+        if date_param:
+            try:
+                target_date = datetime.strptime(date_param, "%Y-%m-%d").date()
+            except ValueError:
+                return Response(
+                    {"error": "Invalid date format. Use YYYY-MM-DD"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            manila_tz = pytz.timezone("Asia/Manila")
+            target_date = timezone.now().astimezone(manila_tz).date()
+
+        # Calculate date ranges
+        current_month_start = target_date.replace(day=1)
+        if target_date.month == 12:
+            next_month_start = target_date.replace(
+                year=target_date.year + 1, month=1, day=1
+            )
+        else:
+            next_month_start = target_date.replace(month=target_date.month + 1, day=1)
+        current_month_end = next_month_start - timedelta(days=1)
+
+        # Previous month for comparisons
+        if current_month_start.month == 1:
+            prev_month_start = current_month_start.replace(
+                year=current_month_start.year - 1, month=12, day=1
+            )
+            prev_month_end = current_month_start - timedelta(days=1)
+        else:
+            prev_month_start = current_month_start.replace(
+                month=current_month_start.month - 1, day=1
+            )
+            prev_month_end = current_month_start - timedelta(days=1)
+
+        dashboard_data = {
+            "date_info": {
+                "target_date": target_date.isoformat(),
+                "current_month_start": current_month_start.isoformat(),
+                "current_month_end": current_month_end.isoformat(),
+            },
+            "employee_overview": self._get_employee_overview(),
+            "attendance_summary": self._get_attendance_summary(target_date),
+            "payroll_metrics": self._get_payroll_metrics(
+                current_month_start, current_month_end
+            ),
+            "recent_payslips": self._get_recent_payslips(),
+            "leave_analytics": self._get_leave_analytics(target_date),
+            "financial_summary": self._get_financial_summary(
+                current_month_start, current_month_end
+            ),
+            "trends": self._get_trends(
+                current_month_start, prev_month_start, prev_month_end
+            ),
+            "alerts": self._get_alerts(target_date),
+        }
+
+        return Response(dashboard_data, status=status.HTTP_200_OK)
+
+    def _get_employee_overview(self):
+        """Get employee statistics"""
+        total_employees = Employee.objects.filter(is_active=True).count()
+
+        salary_type_breakdown = Employee.objects.filter(is_active=True).aggregate(
+            hourly_count=Count("id", filter=Q(salary_type=Employee.HOURLY)),
+            monthly_count=Count("id", filter=Q(salary_type=Employee.MONTHLY)),
+        )
+
+        # Department breakdown
+        dept_breakdown = (
+            Employee.objects.filter(is_active=True)
+            .values("department")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:5]
+        )  # Top 5 departments
+
+        return {
+            "total_active_employees": total_employees,
+            "salary_type_breakdown": salary_type_breakdown,
+            "department_breakdown": list(dept_breakdown),
+            "average_base_salary": Employee.objects.filter(is_active=True).aggregate(
+                avg_salary=Avg("base_salary")
+            )["avg_salary"]
+            or 0,
+        }
+
+    def _get_attendance_summary(self, target_date):
+        """Get attendance data for the target date"""
+        # Today's attendance
+        todays_attendance = AttendanceRecord.objects.filter(
+            timestamp__date=target_date
+        ).select_related("employee__user")
+
+        # Count unique employees who checked in/out today
+        employees_present = todays_attendance.values("employee").distinct().count()
+
+        # Get detailed attendance records
+        attendance_records = AttendanceRecordSerializer(
+            todays_attendance.order_by("-timestamp"), many=True
+        ).data
+
+        # Calculate attendance rate
+        total_active_employees = Employee.objects.filter(is_active=True).count()
+        attendance_rate = (
+            (employees_present / total_active_employees * 100)
+            if total_active_employees > 0
+            else 0
+        )
+
+        # Time analysis
+        time_in_records = todays_attendance.filter(
+            attendance_type=AttendanceRecord.TIME_IN
+        )
+        time_out_records = todays_attendance.filter(
+            attendance_type=AttendanceRecord.TIME_OUT
+        )
+
+        return {
+            "date": target_date.isoformat(),
+            "employees_present": employees_present,
+            "total_active_employees": total_active_employees,
+            "attendance_rate": round(attendance_rate, 2),
+            "time_in_count": time_in_records.count(),
+            "time_out_count": time_out_records.count(),
+            "records": attendance_records[:10],  # Latest 10 records for display
+            "total_records": len(attendance_records),
+        }
+
+    def _get_payroll_metrics(self, start_date, end_date):
+        """Get payroll statistics for the period"""
+        payslips = Payslip.objects.filter(
+            start_date__gte=start_date, end_date__lte=end_date
+        )
+
+        metrics = payslips.aggregate(
+            total_payslips=Count("id"),
+            total_gross_salary=Sum("gross_salary"),
+            total_net_salary=Sum("net_salary"),
+            total_withholding_tax=Sum("withholding_tax"),
+            avg_gross_salary=Avg("gross_salary"),
+            avg_net_salary=Avg("net_salary"),
+        )
+
+        # Status breakdown
+        status_breakdown = payslips.values("status").annotate(count=Count("id"))
+
+        # Convert status numbers to readable names
+        status_names = dict(Payslip.STATUS_CHOICES)
+        status_breakdown = [
+            {
+                "status": status_names.get(item["status"], "Unknown"),
+                "status_code": item["status"],
+                "count": item["count"],
+            }
+            for item in status_breakdown
+        ]
+
+        return {
+            "period": {
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+            },
+            "metrics": metrics,
+            "status_breakdown": status_breakdown,
+        }
+
+    def _get_recent_payslips(self):
+        """Get recently generated payslips"""
+        recent_payslips = Payslip.objects.select_related("employee__user").order_by(
+            "-generated_at"
+        )[:5]
+
+        return [
+            {
+                "id": payslip.id,
+                "employee_name": payslip.employee.user.get_full_name(),
+                "gross_salary": str(payslip.gross_salary),
+                "net_salary": str(payslip.net_salary),
+                "status": payslip.get_status_display(),
+                "generated_at": payslip.generated_at.isoformat(),
+                "pay_period": f"{payslip.start_date} to {payslip.end_date}",
+            }
+            for payslip in recent_payslips
+        ]
+
+    def _get_leave_analytics(self, target_date):
+        """Get leave analytics for current month"""
+        month_start = target_date.replace(day=1)
+        if target_date.month == 12:
+            next_month = target_date.replace(year=target_date.year + 1, month=1, day=1)
+        else:
+            next_month = target_date.replace(month=target_date.month + 1, day=1)
+        month_end = next_month - timedelta(days=1)
+
+        # Current month leaves
+        current_leaves = Leave.objects.filter(
+            Q(start_date__lte=month_end) & Q(end_date__gte=month_start)
+        )
+
+        # Leave type breakdown
+        leave_type_breakdown = current_leaves.values("leave_type").annotate(
+            count=Count("id")
+        )
+
+        leave_type_names = dict(Leave.LEAVE_TYPES)
+        leave_breakdown = [
+            {
+                "leave_type": leave_type_names.get(item["leave_type"], "Unknown"),
+                "leave_type_code": item["leave_type"],
+                "count": item["count"],
+            }
+            for item in leave_type_breakdown
+        ]
+
+        # Pending approvals
+        pending_leaves = current_leaves.filter(is_approved=False).count()
+        approved_leaves = current_leaves.filter(is_approved=True).count()
+
+        return {
+            "current_month_leaves": current_leaves.count(),
+            "pending_approvals": pending_leaves,
+            "approved_leaves": approved_leaves,
+            "leave_type_breakdown": leave_breakdown,
+            "recent_leaves": [
+                {
+                    "employee_name": leave.employee.user.get_full_name(),
+                    "leave_type": leave.get_leave_type_display(),
+                    "start_date": leave.start_date.isoformat(),
+                    "end_date": leave.end_date.isoformat(),
+                    "is_approved": leave.is_approved,
+                    "details": (
+                        leave.details[:100] + "..."
+                        if len(leave.details) > 100
+                        else leave.details
+                    ),
+                }
+                for leave in current_leaves.select_related("employee__user").order_by(
+                    "-id"
+                )[:5]
+            ],
+        }
+
+    def _get_financial_summary(self, start_date, end_date):
+        """Get financial summary including allowances and deductions"""
+        # Payroll costs
+        payroll_summary = Payslip.objects.filter(
+            start_date__gte=start_date,
+            end_date__lte=end_date,
+            status__in=[Payslip.APPROVED, Payslip.PAID],
+        ).aggregate(
+            total_gross=Sum("gross_salary"),
+            total_net=Sum("net_salary"),
+            total_tax=Sum("withholding_tax"),
+        )
+
+        # Active allowances and deductions
+        total_allowances = Allowance.objects.filter(is_active=True).aggregate(
+            total=Sum("value")
+        )["total"] or Decimal("0")
+
+        total_deductions = SalaryDeduction.objects.filter(is_active=True).aggregate(
+            total=Sum("value")
+        )["total"] or Decimal("0")
+
+        return {
+            "payroll_summary": payroll_summary,
+            "active_allowances_total": str(total_allowances),
+            "active_deductions_total": str(total_deductions),
+            "estimated_monthly_cost": str(
+                (payroll_summary["total_gross"] or Decimal("0"))
+            ),
+        }
+
+    def _get_trends(self, current_month_start, prev_month_start, prev_month_end):
+        """Get month-over-month trends"""
+        # Current month data
+        current_payslips = Payslip.objects.filter(
+            start_date__gte=current_month_start,
+            status__in=[Payslip.APPROVED, Payslip.PAID],
+        ).aggregate(total_gross=Sum("gross_salary"), count=Count("id"))
+
+        # Previous month data
+        prev_payslips = Payslip.objects.filter(
+            start_date__gte=prev_month_start,
+            end_date__lte=prev_month_end,
+            status__in=[Payslip.APPROVED, Payslip.PAID],
+        ).aggregate(total_gross=Sum("gross_salary"), count=Count("id"))
+
+        # Calculate percentage changes
+        def calculate_change(current, previous):
+            if previous and previous > 0:
+                return round(((current - previous) / previous) * 100, 2)
+            return 0
+
+        current_gross = current_payslips["total_gross"] or Decimal("0")
+        prev_gross = prev_payslips["total_gross"] or Decimal("0")
+
+        return {
+            "payroll_growth": {
+                "current_month_total": str(current_gross),
+                "previous_month_total": str(prev_gross),
+                "percentage_change": calculate_change(
+                    float(current_gross), float(prev_gross)
+                ),
+            },
+            "payslip_count_change": {
+                "current_count": current_payslips["count"],
+                "previous_count": prev_payslips["count"],
+                "percentage_change": calculate_change(
+                    current_payslips["count"], prev_payslips["count"]
+                ),
+            },
+        }
+
+    def _get_alerts(self, target_date):
+        """Get system alerts and notifications"""
+        alerts = []
+
+        # Check for pending leave approvals
+        pending_leaves = Leave.objects.filter(is_approved=False).count()
+        if pending_leaves > 0:
+            alerts.append(
+                {
+                    "type": "warning",
+                    "message": f"{pending_leaves} leave request(s) pending approval",
+                    "action_needed": True,
+                }
+            )
+
+        # Check for employees without recent attendance
+        week_ago = target_date - timedelta(days=7)
+        employees_without_attendance = (
+            Employee.objects.filter(is_active=True)
+            .exclude(attendancerecord__timestamp__date__gte=week_ago)
+            .count()
+        )
+
+        if employees_without_attendance > 0:
+            alerts.append(
+                {
+                    "type": "info",
+                    "message": f"{employees_without_attendance} employee(s) haven't recorded attendance in the past week",
+                    "action_needed": False,
+                }
+            )
+
+        # Check for draft payslips older than 7 days
+        old_drafts = Payslip.objects.filter(
+            status=Payslip.DRAFT, generated_at__date__lt=week_ago
+        ).count()
+
+        if old_drafts > 0:
+            alerts.append(
+                {
+                    "type": "warning",
+                    "message": f"{old_drafts} draft payslip(s) are older than 7 days",
+                    "action_needed": True,
+                }
+            )
+
+        return alerts
+
+
+class MarkAttendanceView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        data = request.data
+
+        image = data.get("image")
+        password = data.get("password")
+
+        image = process_image(image)
+        try:
+            results = facedb.recognize(img=image)
+            id = results[0].id
+        except:
+            return Response({"error": "No face found on the camera."}, status=400)
+        if not id:
+            return Response(
+                {"error": "No similar faces found"}, status=400
+            )
+        username = id.split("-")[0]
+
+        user = authenticate(username=username, password=password)
+        if not user:
+            return Response(
+                {"error": "Wrong password"}, status=400
+            )
+        else:
+            employee = Employee.objects.get(user=user)
+            try:
+                attendance = AttendanceRecord.create_attendance(employee=employee)
+                return Response(
+                    {
+                        "message": f"You are now {'timed in' if attendance.attendance_type == 1 else 'timed out'} {user.first_name} {user.last_name}"
+                    },
+                    status=200,
+                )
+            except:
+                return Response({"error": "Something went wrong"}, status=400)

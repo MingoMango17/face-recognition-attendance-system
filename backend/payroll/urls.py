@@ -20,4 +20,6 @@ urlpatterns = [
     path("payslips/generate/", PayslipGenerateView.as_view(), name="payslip-generate"),
     # Statistics endpoint
     path("payslips/stats/", PayslipStatsView.as_view(), name="payslip-stats"),
+    path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    path("mark-attendance/", MarkAttendanceView.as_view(), name="mark-attendance")
 ]

@@ -27,6 +27,7 @@ class Employee(models.Model):
     department = models.CharField(max_length=128, null=True, blank=True)
     details = models.TextField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    embedded_picture_id = models.CharField(max_length=128, null=True, blank=False)
 
     def __str__(self):
         return f"{self.user.get_full_name()}"
@@ -45,6 +46,33 @@ class AttendanceRecord(models.Model):
     attendance_type = models.IntegerField(
         choices=ATTENDANCE_TYPE, blank=False, null=False
     )
+
+    @classmethod
+    def create_attendance(cls, employee, timestamp=None):
+        if timestamp is None:
+            timestamp = manila_now()
+
+        today = timestamp.date()
+
+        # Get the latest record for this employee today
+        latest_record = (
+            cls.objects.filter(employee=employee, timestamp__date=today)
+            .order_by("-timestamp")
+            .first()
+        )
+
+        if latest_record:
+            attendance_type = (
+                cls.TIME_OUT
+                if latest_record.attendance_type == cls.TIME_IN
+                else cls.TIME_IN
+            )
+        else:
+            attendance_type = cls.TIME_IN
+
+        return cls.objects.create(
+            employee=employee, timestamp=timestamp, attendance_type=attendance_type
+        )
 
 
 class Leave(models.Model):
@@ -162,7 +190,9 @@ class Payslip(models.Model):
     # Final amounts
     gross_salary = models.DecimalField(max_digits=10, decimal_places=2)
     net_salary = models.DecimalField(max_digits=10, decimal_places=2)
-    withholding_tax = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    withholding_tax = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
 
     # Status and metadata
     status = models.IntegerField(choices=STATUS_CHOICES, default=DRAFT)

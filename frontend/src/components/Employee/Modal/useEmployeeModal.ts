@@ -11,6 +11,7 @@ interface EmployeeFormData {
     salary_type: "hourly" | "monthly";
     deductions: Array<{ type: number; amount: string }>;
     allowances: Array<{ type: number; amount: string; taxable: boolean }>;
+    photo?: string; // Add photo field
 }
 
 interface Employee {
@@ -28,6 +29,7 @@ interface Employee {
     department: string;
     details: string;
     is_active: boolean;
+    photo?: string; // Add photo field
 }
 
 interface UseEmployeeModalProps {
@@ -54,6 +56,7 @@ export const useEmployeeModal = ({
         salary_type: "monthly",
         deductions: [],
         allowances: [],
+        photo: "", // Initialize photo field
     });
 
     const [loading, setLoading] = useState(false);
@@ -69,6 +72,7 @@ export const useEmployeeModal = ({
             salary_type: "monthly",
             deductions: [],
             allowances: [],
+            photo: "", // Reset photo field
         });
     };
 
@@ -87,6 +91,7 @@ export const useEmployeeModal = ({
                 salary_type: employee.salary_type === 1 ? "hourly" : "monthly",
                 deductions: [],
                 allowances: [],
+                photo: employee.photo || "", // Initialize with existing photo
             });
 
             try {
@@ -153,8 +158,20 @@ export const useEmployeeModal = ({
         }
     }, [mode, employee, isOpen]);
 
-    const handleChange = (field: keyof EmployeeFormData, value: any) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+    // Updated handleChange function to support both event objects and direct values
+    const handleChange = (fieldOrEvent: keyof EmployeeFormData | React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, value?: any) => {
+        if (typeof fieldOrEvent === 'string') {
+            // Direct field update (for photo and other programmatic updates)
+            setFormData((prev) => ({ ...prev, [fieldOrEvent]: value }));
+        } else {
+            // Event object (for form inputs)
+            const event = fieldOrEvent;
+            const field = event.target.name as keyof EmployeeFormData;
+            const eventValue = event.target.type === 'checkbox' 
+                ? (event.target as HTMLInputElement).checked 
+                : event.target.value;
+            setFormData((prev) => ({ ...prev, [field]: eventValue }));
+        }
     };
 
     const addDeduction = () => {
