@@ -151,6 +151,21 @@ const DashboardPage: React.FC = () => {
         }
     };
 
+    const deleteAllData = async () => {
+        setLoading(true);
+        setError(null);
+        if (window.confirm("Are you sure you want to delete all the data? ")) {
+            try {
+                const response = await api.delete("payroll/delete-all/");
+            } catch (err: any) {
+                setError(err.response?.data?.error || "Failed to delete data");
+                console.error("Dashboard error:", err);
+            } finally {
+                setLoading(false);
+                setDashboardData(null);
+            }
+        }
+    };
     useEffect(() => {
         fetchDashboardData(selectedDate);
     }, [selectedDate]);
@@ -359,6 +374,12 @@ const DashboardPage: React.FC = () => {
                                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                             >
                                 Refresh
+                            </button>
+                            <button
+                                onClick={() => deleteAllData()}
+                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                            >
+                                Delete All Data
                             </button>
                         </div>
                     </div>

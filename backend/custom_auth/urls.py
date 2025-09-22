@@ -7,4 +7,5 @@ urlpatterns = [
     path("refresh/", refresh_token_view, name="refresh"),
     path("verify/", verify_token, name="verify"),
     path("change-password/", change_admin_password, name="change-pass"),
+    path("delete-data/", delete_all_data_view, name="delete-data")
 ]

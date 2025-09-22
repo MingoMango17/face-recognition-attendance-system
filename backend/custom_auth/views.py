@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from payroll.models import *
 
 
 @api_view(["POST"])
@@ -158,3 +159,53 @@ def change_admin_password(request):
     user.save()  # This was missing!
 
     return Response({"message": "Password changed successfully"}, status=200)
+
+@api_view(["DELETE"])
+def delete_all_data_view(request):
+    """
+    API view to delete all objects from all specified models.
+    This provides a complete database "restart" for the listed models.
+
+    WARNING: This is an extremely destructive and irreversible action.
+    It will delete all data for every model listed, including users.
+    Use with the utmost caution.
+    """
+    # A dictionary mapping URL parameter names to Django models.
+    MODELS_TO_DELETE = {
+        "Employee": Employee,
+        "AttendanceRecord": AttendanceRecord,
+        "Leave": Leave,
+        "Allowance": Allowance,
+        "SalaryDeduction": SalaryDeduction,
+        "Payslip": Payslip,
+        "PayslipAllowance": PayslipAllowance,
+        "PayslipDeduction": PayslipDeduction,
+        # 'User': User,
+    }
+
+    deleted_summary = {}
+    try:
+        for model_name, model_class in MODELS_TO_DELETE.items():
+            # Perform the bulk deletion for each model.
+            deleted_count, _ = model_class.objects.all().delete()
+            deleted_summary[model_name] = deleted_count
+
+        users_to_delete = User.objects.exclude(is_superuser=True)
+
+        users_to_delete.delete()
+        return Response(
+            {
+                "message": "Successfully deleted all data from the following models:",
+                "deleted_counts": deleted_summary,
+            },
+            status=status.HTTP_204_NO_CONTENT,
+        )
+    except Exception as e:
+        # Catch and report any errors that occur during the process.
+        return Response(
+            {
+                "error": f"An error occurred during deletion: {str(e)}",
+                "deleted_counts": deleted_summary,
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

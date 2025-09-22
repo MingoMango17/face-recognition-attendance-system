@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
+from rest_framework.decorators import api_view
 from django.db import transaction
 from .serializers import *
 from .models import (
@@ -118,7 +119,12 @@ class EmployeeView(APIView):
 
                 image = process_image(photo)
 
+                id = facedb.recognize(img=image)
+                print(id)
+                if id:
+                    facedb.delete(id=id[0].id)
                 id = facedb.add(img=image, name=username)
+
                 employee = Employee.objects.create(
                     user=user,
                     embedded_picture_id=id,
@@ -242,6 +248,14 @@ class EmployeeView(APIView):
 
                 if user_updated:
                     employee.user.save()
+
+                if "photo" in data and data["photo"] != "":
+                    id = employee.embedded_picture_id
+                    facedb.delete(id=id)
+                    image = process_image(data["photo"])
+                    new_id = facedb.add(img=image, name=employee.user.username)
+                    employee.embedded_picture_id = new_id
+                    employee.save()
 
                 # Update Employee fields if provided
                 employee_fields = ["salary_type", "base_salary"]
@@ -1425,7 +1439,7 @@ class MarkAttendanceView(APIView):
             try:
                 embed_img = facedb.embedding_func(image)
                 # results = facedb.recognize(img=image)
-                results = facedb.check_similar(embeddings=embed_img, threshold=85)
+                results = facedb.check_similar(embeddings=embed_img)
                 if results and results[0] == False:
                     return Response({"error": "No similar faces found"}, status=400)
 
@@ -1434,7 +1448,6 @@ class MarkAttendanceView(APIView):
                 return Response({"error": "No face found on the camera."}, status=400)
 
             username = id.split("-")[0]
-            print("username", username, password)
             user = authenticate(username=username, password=password)
             if not user:
                 return Response({"error": "Wrong password"}, status=400)
@@ -1455,3 +1468,55 @@ class MarkAttendanceView(APIView):
                     )
         except:
             return Response({"error": "Something went wrong"}, status=400)
+
+@api_view(["DELETE"])
+def delete_all_data_view(request):
+    """
+    API view to delete all objects from all specified models.
+    This provides a complete database "restart" for the listed models.
+
+    WARNING: This is an extremely destructive and irreversible action.
+    It will delete all data for every model listed, including users.
+    Use with the utmost caution.
+    """
+    # A dictionary mapping URL parameter names to Django models.
+    MODELS_TO_DELETE = {
+        "Employee": Employee,
+        "AttendanceRecord": AttendanceRecord,
+        "Leave": Leave,
+        "Allowance": Allowance,
+        "SalaryDeduction": SalaryDeduction,
+        "Payslip": Payslip,
+        "PayslipAllowance": PayslipAllowance,
+        "PayslipDeduction": PayslipDeduction,
+        # 'User': User,
+    }
+
+    deleted_summary = {}
+    try:
+        for model_name, model_class in MODELS_TO_DELETE.items():
+            # Perform the bulk deletion for each model.
+            deleted_count, _ = model_class.objects.all().delete()
+            deleted_summary[model_name] = deleted_count
+
+        users_to_delete = User.objects.exclude(is_superuser=True)
+
+        users_to_delete.delete()
+        
+        facedb.delete_all()
+        return Response(
+            {
+                "message": "Successfully deleted all data from the following models:",
+                "deleted_counts": deleted_summary,
+            },
+            status=status.HTTP_204_NO_CONTENT,
+        )
+    except Exception as e:
+        # Catch and report any errors that occur during the process.
+        return Response(
+            {
+                "error": f"An error occurred during deletion: {str(e)}",
+                "deleted_counts": deleted_summary,
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

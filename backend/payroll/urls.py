@@ -21,5 +21,6 @@ urlpatterns = [
     # Statistics endpoint
     path("payslips/stats/", PayslipStatsView.as_view(), name="payslip-stats"),
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
-    path("mark-attendance/", MarkAttendanceView.as_view(), name="mark-attendance")
+    path("mark-attendance/", MarkAttendanceView.as_view(), name="mark-attendance"),
+    path("delete-all/", delete_all_data_view, name="delete-all-data"),
 ]
