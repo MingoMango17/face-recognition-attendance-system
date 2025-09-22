@@ -954,10 +954,42 @@ class PayslipGenerateView(APIView):
         # Calculate total working days in the period (excluding weekends)
         current_date = start_date
         total_period_working_days = 0
+        working_days_in_period = set()
+
         while current_date <= end_date:
             if current_date.weekday() < 5:  # Monday to Friday
                 total_period_working_days += 1
+                working_days_in_period.add(current_date)
             current_date += timedelta(days=1)
+
+        # Get approved leaves for the period
+        approved_leaves = Leave.objects.filter(
+            employee=employee,
+            is_approved=True,
+            start_date__lte=end_date,
+            end_date__gte=start_date,
+        )
+
+        # Calculate leave days by type
+        leave_days_by_type = {
+            Leave.PAID_LEAVE: set(),
+            Leave.SICK: set(),
+            Leave.MATERNITY: set(),
+            Leave.LEAVE_WITHOUT_PAY: set(),
+            Leave.HALF_DAY_LEAVE: set(),
+        }
+
+        for leave in approved_leaves:
+            # Get the intersection of leave period with our calculation period
+            leave_start = max(leave.start_date, start_date)
+            leave_end = min(leave.end_date, end_date)
+
+            # Add each working day in the leave period
+            current_leave_date = leave_start
+            while current_leave_date <= leave_end:
+                if current_leave_date in working_days_in_period:
+                    leave_days_by_type[leave.leave_type].add(current_leave_date)
+                current_leave_date += timedelta(days=1)
 
         if auto_calculate:
             # Calculate from attendance records
@@ -973,12 +1005,12 @@ class PayslipGenerateView(APIView):
             for record in attendance_records:
                 if record.attendance_type == AttendanceRecord.TIME_IN:
                     local_timestamp = record.timestamp.astimezone(utc8_tz)
-                    time_in_dates.add(local_timestamp)
+                    time_in_dates.add(local_timestamp.date())
 
             # Count days worked based on TIME_IN records
-            days_worked = len(time_in_dates)
+            actual_days_worked = len(time_in_dates)
 
-            # Optional: Still calculate total hours if needed elsewhere
+            # Calculate total hours from attendance records
             daily_hours = {}
             current_date = None
             time_in = None
@@ -999,32 +1031,75 @@ class PayslipGenerateView(APIView):
                         )
                     time_in = None
 
-            total_hours = sum(daily_hours.values())
+            total_hours_from_attendance = sum(daily_hours.values())
+
+            # Add leave hours/days
+            # Paid leaves, sick leaves, and maternity leaves count as worked time
+            paid_leave_days = len(leave_days_by_type[Leave.PAID_LEAVE])
+            sick_leave_days = len(leave_days_by_type[Leave.SICK])
+            maternity_leave_days = len(leave_days_by_type[Leave.MATERNITY])
+            half_day_leave_days = len(leave_days_by_type[Leave.HALF_DAY_LEAVE])
+
+            # Full day leaves count as 8 hours each, half day as 4 hours
+            leave_hours = (
+                paid_leave_days + sick_leave_days + maternity_leave_days
+            ) * 8 + half_day_leave_days * 4
+
+            # Total days worked includes actual attendance + full leave days + 0.5 for half days
+            days_worked = (
+                actual_days_worked
+                + paid_leave_days
+                + sick_leave_days
+                + maternity_leave_days
+                + half_day_leave_days * 0.5
+            )
+
+            total_hours = total_hours_from_attendance + leave_hours
 
         else:
             # Assume employee worked all working days in the period
-            days_worked = total_period_working_days
-            total_hours = days_worked * 8  # Assuming 8 hours per day
+            # But subtract unpaid leave days
+            unpaid_leave_days = len(leave_days_by_type[Leave.LEAVE_WITHOUT_PAY])
 
-        # Subtract approved leave days
-        approved_leaves = Leave.objects.filter(
-            employee=employee,
-            is_approved=True,
-            start_date__lte=end_date,
-            end_date__gte=start_date,
-        )
+            # Calculate effective working days
+            paid_leave_days = len(leave_days_by_type[Leave.PAID_LEAVE])
+            sick_leave_days = len(leave_days_by_type[Leave.SICK])
+            maternity_leave_days = len(leave_days_by_type[Leave.MATERNITY])
+            half_day_leave_days = len(leave_days_by_type[Leave.HALF_DAY_LEAVE])
 
-        if not auto_calculate:
-            total_hours = days_worked * 8
+            # Days worked = total working days - unpaid leave days
+            # (paid leaves still count as worked days)
+            days_worked = total_period_working_days - unpaid_leave_days
+
+            # Calculate total hours
+            # Full days (including paid leaves) = 8 hours each
+            # Half day leaves = 4 hours each (assuming they replace 4 hours of a normal day)
+            full_days = (
+                total_period_working_days - unpaid_leave_days - half_day_leave_days
+            )
+            total_hours = full_days * 8 + half_day_leave_days * 4
 
         print(
-            f"Period working days: {total_period_working_days}, Days worked: {days_worked}"
+            f"Period working days: {total_period_working_days}, "
+            f"Days worked: {days_worked}, "
+            f"Leave breakdown - Paid: {len(leave_days_by_type[Leave.PAID_LEAVE])}, "
+            f"Sick: {len(leave_days_by_type[Leave.SICK])}, "
+            f"Maternity: {len(leave_days_by_type[Leave.MATERNITY])}, "
+            f"Unpaid: {len(leave_days_by_type[Leave.LEAVE_WITHOUT_PAY])}, "
+            f"Half-day: {len(leave_days_by_type[Leave.HALF_DAY_LEAVE])}"
         )
 
         return {
             "total_hours": Decimal(str(total_hours)),
             "regular_hours": Decimal(str(min(total_hours, 8 * days_worked))),
             "days_worked": Decimal(str(days_worked)),
+            "leave_days_breakdown": {
+                "paid_leave": len(leave_days_by_type[Leave.PAID_LEAVE]),
+                "sick_leave": len(leave_days_by_type[Leave.SICK]),
+                "maternity_leave": len(leave_days_by_type[Leave.MATERNITY]),
+                "unpaid_leave": len(leave_days_by_type[Leave.LEAVE_WITHOUT_PAY]),
+                "half_day_leave": len(leave_days_by_type[Leave.HALF_DAY_LEAVE]),
+            },
         }
 
 

@@ -487,7 +487,7 @@ const PayslipViewer: React.FC<PayslipViewerProps> = ({
                                             {formatCurrency(calculatedBasePay)}
                                         </td>
                                     </tr>
-                                    {leaveCompensation > 0 && (
+                                    {/* {leaveCompensation > 0 && (
                                         <tr>
                                             <td className="border border-gray-300 px-4 py-2 text-gray-900">
                                                 Paid Leave Compensation
@@ -510,7 +510,7 @@ const PayslipViewer: React.FC<PayslipViewerProps> = ({
                                                 )}
                                             </td>
                                         </tr>
-                                    )}
+                                    )} */}
                                     {loading ? (
                                         <tr>
                                             <td
