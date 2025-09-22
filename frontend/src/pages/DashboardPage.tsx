@@ -162,7 +162,7 @@ const DashboardPage: React.FC = () => {
                 console.error("Dashboard error:", err);
             } finally {
                 setLoading(false);
-                setDashboardData(null);
+                // setDashboardData(null);
             }
         }
     };

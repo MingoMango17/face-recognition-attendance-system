@@ -7,6 +7,7 @@ import EmployeeSearchBar from "../components/Employee/EmployeeSearchBar";
 import EmployeeTable from "../components/Employee/EmployeeTable";
 import EmployeePagination from "../components/Employee/EmployeePagination";
 import EmployeeHeader from "../components/Employee/EmployeeHeader";
+import { toast, Bounce } from "react-toastify";
 
 interface Employee {
     id: number;
@@ -87,15 +88,14 @@ const EmployeePage: React.FC = () => {
         let filtered = employees.filter((employee) => {
             const fullName =
                 `${employee.user.first_name} ${employee.user.last_name}`.toLowerCase();
-            const matchesSearch =
-                fullName.includes(searchTerm.toLowerCase()) 
-                //  ||
-                // employee.user.email
-                //     ?.toLowerCase()
-                //     .includes(searchTerm.toLowerCase()) ||
-                // employee.department
-                //     .toLowerCase()
-                //     .includes(searchTerm.toLowerCase());
+            const matchesSearch = fullName.includes(searchTerm.toLowerCase());
+            //  ||
+            // employee.user.email
+            //     ?.toLowerCase()
+            //     .includes(searchTerm.toLowerCase()) ||
+            // employee.department
+            //     .toLowerCase()
+            //     .includes(searchTerm.toLowerCase());
 
             const matchesDepartment =
                 !filters.department ||
@@ -198,12 +198,33 @@ const EmployeePage: React.FC = () => {
                 );
                 console.log("Employee updated successfully");
             }
-
+            toast.success("Employee added!", {
+                position: "bottom-center",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: false,
+                progress: undefined,
+                theme: "light",
+                transition: Bounce,
+            });
             // Refresh the data after add/edit
             fetchData();
         } catch (error) {
             console.error("Error saving employee:", error);
             // You might want to show an error message to the user
+            toast.error("Error adding employee!", {
+                position: "bottom-center",
+                autoClose: 5000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: false,
+                progress: undefined,
+                theme: "light",
+                transition: Bounce,
+            });
         }
     };
 
