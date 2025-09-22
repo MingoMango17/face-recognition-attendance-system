@@ -26,13 +26,13 @@ interface TemplateData {
         calculatedBasePay: number;
         gross_salary: string;
         net_salary: string;
-        withholding_tax: string;
     };
     allowancesRows: string;
     deductionsRows: string;
+    totalAllowances: number;
     totalDeductions: number;
     status: string;
-    withholding_tax: float;
+    withholding_tax: number;
     formatCurrency: (amount: string | number) => string;
     formatDate: (dateString: string) => string;
 }
@@ -46,6 +46,7 @@ export const payslipTemplate = (data: TemplateData): string => {
         withholding_tax,
         allowancesRows,
         deductionsRows,
+        totalAllowances,
         totalDeductions,
         status,
         formatCurrency,
@@ -64,7 +65,8 @@ export const payslipTemplate = (data: TemplateData): string => {
         );
     };
 
-    const withholdingTaxAmount = parseFloat(withholding_tax || "0");
+    const withholdingTaxAmount = parseFloat(withholding_tax?.toString() || "0");
+    const totalAllDeductions = totalDeductions + withholdingTaxAmount;
 
     return `
     <!DOCTYPE html>
@@ -203,7 +205,7 @@ export const payslipTemplate = (data: TemplateData): string => {
                         <tr class="total-row">
                             <td>Total Deductions</td>
                             <td class="amount">${formatCurrency(
-                                totalDeductions
+                                totalAllDeductions
                             )}</td>
                         </tr>
                     </tbody>

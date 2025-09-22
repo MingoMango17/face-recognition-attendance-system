@@ -33,6 +33,8 @@ from .services import get_facedb
 
 facedb = get_facedb()
 
+utc8_tz = pytz.timezone("Asia/Manila")
+
 
 def process_image(image):
     try:
@@ -776,11 +778,19 @@ class PayslipGenerateView(APIView):
         # Calculate base salary based on type and frequency
         if employee.salary_type == Employee.HOURLY:
             base_amount = employee.base_salary * payslip.regular_hours
-        else:
-            base_amount = self._convert_monthly_to_pay_period(
-                employee.base_salary, pay_frequency, payslip
-            )
-
+        else:  # Monthly salary
+            if payslip.days_worked == 0:
+                base_amount = Decimal("0")  # No work = no pay
+            elif payslip.total_working_days > 0:
+                period_salary = self._convert_monthly_to_pay_period(
+                    employee.base_salary, pay_frequency, payslip
+                )
+                base_amount = period_salary * (
+                    Decimal(str(payslip.days_worked))
+                    / Decimal(str(payslip.total_working_days))
+                )
+            else:
+                base_amount = Decimal("0")
         print(f"Base amount for {pay_frequency} pay: {base_amount}")
 
         # Calculate allowances based on frequency
@@ -957,7 +967,18 @@ class PayslipGenerateView(APIView):
                 timestamp__date__lte=end_date,
             ).order_by("timestamp")
 
-            # Group by date and calculate daily hours
+            # Get unique dates where employee has TIME_IN records
+            time_in_dates = set()
+
+            for record in attendance_records:
+                if record.attendance_type == AttendanceRecord.TIME_IN:
+                    local_timestamp = record.timestamp.astimezone(utc8_tz)
+                    time_in_dates.add(local_timestamp)
+
+            # Count days worked based on TIME_IN records
+            days_worked = len(time_in_dates)
+
+            # Optional: Still calculate total hours if needed elsewhere
             daily_hours = {}
             current_date = None
             time_in = None
@@ -979,7 +1000,6 @@ class PayslipGenerateView(APIView):
                     time_in = None
 
             total_hours = sum(daily_hours.values())
-            days_worked = len(daily_hours)
 
         else:
             # Assume employee worked all working days in the period
@@ -1469,6 +1489,7 @@ class MarkAttendanceView(APIView):
         except:
             return Response({"error": "Something went wrong"}, status=400)
 
+
 @api_view(["DELETE"])
 def delete_all_data_view(request):
     """
@@ -1502,7 +1523,7 @@ def delete_all_data_view(request):
         users_to_delete = User.objects.exclude(is_superuser=True)
 
         users_to_delete.delete()
-        
+
         facedb.delete_all()
         return Response(
             {

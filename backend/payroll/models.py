@@ -74,6 +74,11 @@ class AttendanceRecord(models.Model):
             employee=employee, timestamp=timestamp, attendance_type=attendance_type
         )
 
+    def __str__(self):
+        return "Employee {} {}: {}".format(
+            self.employee.user.first_name, self.attendance_type, self.timestamp
+        )
+
 
 class Leave(models.Model):
     PAID_LEAVE = 0

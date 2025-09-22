@@ -45,4 +45,4 @@ USER appuser
 EXPOSE 8000
 
 # Run the application (collectstatic will run in docker-compose command)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "your_project.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "central.wsgi:application"]

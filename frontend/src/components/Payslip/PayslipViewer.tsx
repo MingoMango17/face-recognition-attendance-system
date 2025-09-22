@@ -231,7 +231,15 @@ const PayslipViewer: React.FC<PayslipViewerProps> = ({
     } else {
         // Monthly
         const daysRatio = payslip.days_worked / payslip.total_working_days;
-        calculatedBasePay = baseSalary * daysRatio;
+        if (payslip.pay_frequency === "weekly") {
+            calculatedBasePay = (baseSalary / 4.33) * daysRatio;
+        } else if (payslip.pay_frequency === "biweekly") {
+            calculatedBasePay = (baseSalary / 2.17) * daysRatio;
+        } else if (payslip.pay_frequency === "semi_monthly") {
+            calculatedBasePay = (baseSalary / 4.33) * daysRatio;
+        } else {
+            calculatedBasePay = baseSalary * daysRatio;
+        }
     }
 
     // Calculate totals from actual allowances and deductions (using prorated values)
