@@ -1,9 +1,15 @@
 // components/Attendance/AttendanceTable.tsx
 import React, { useMemo } from "react";
-import { type AttendanceRecord, type DailyAttendance } from "../../types/attendance";
+import {
+    type AttendanceRecord,
+    type DailyAttendance,
+} from "../../types/attendance";
 import AttendanceTableHeader from "./AttendanceTableHeader";
 import AttendanceTableRow from "./AttendanceTableRow";
-import { formatDate, processAttendanceRecords } from "../../utils/attendance.utils";
+import {
+    formatDate,
+    processAttendanceRecords,
+} from "../../utils/attendance.utils";
 
 interface AttendanceTableProps {
     attendanceRecords: AttendanceRecord[];
@@ -34,10 +40,14 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
         if (!searchTerm.trim()) {
             return processedAttendanceData;
         }
-        
-        return processedAttendanceData.filter((attendance) =>
-            attendance.employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            attendance.employee.department?.toLowerCase().includes(searchTerm.toLowerCase()) 
+
+        return processedAttendanceData.filter(
+            (attendance) =>
+                attendance.employee.name
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase())
+            // ||
+            // attendance.employee.department?.toLowerCase().includes(searchTerm.toLowerCase())
             // || attendance.employee.user.email.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [processedAttendanceData, searchTerm]);
@@ -88,10 +98,9 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
             {filteredAttendanceData.length === 0 && (
                 <div className="text-center py-8">
                     <p className="text-gray-500">
-                        {searchTerm.trim() 
+                        {searchTerm.trim()
                             ? "No attendance records found matching your search"
-                            : "No attendance records found for this date"
-                        }
+                            : "No attendance records found for this date"}
                     </p>
                 </div>
             )}
@@ -126,4 +135,4 @@ const AttendanceTable: React.FC<AttendanceTableProps> = ({
     );
 };
 
-export default AttendanceTable
+export default AttendanceTable;

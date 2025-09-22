@@ -88,13 +88,14 @@ const EmployeePage: React.FC = () => {
             const fullName =
                 `${employee.user.first_name} ${employee.user.last_name}`.toLowerCase();
             const matchesSearch =
-                fullName.includes(searchTerm.toLowerCase()) ||
+                fullName.includes(searchTerm.toLowerCase()) 
+                // ||
                 // employee.user.email
                 //     ?.toLowerCase()
                 //     .includes(searchTerm.toLowerCase()) ||
-                employee.department
-                    .toLowerCase()
-                    .includes(searchTerm.toLowerCase());
+                // employee.department
+                //     .toLowerCase()
+                //     .includes(searchTerm.toLowerCase());
 
             const matchesDepartment =
                 !filters.department ||

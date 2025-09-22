@@ -118,7 +118,7 @@ class EmployeeView(APIView):
 
                 image = process_image(photo)
 
-                id = facedb.add(image, name=username)
+                id = facedb.add(img=image, name=username)
                 employee = Employee.objects.create(
                     user=user,
                     embedded_picture_id=id,
@@ -1422,30 +1422,36 @@ class MarkAttendanceView(APIView):
 
         image = process_image(image)
         try:
-            results = facedb.recognize(img=image)
-            id = results[0].id
-        except:
-            return Response({"error": "No face found on the camera."}, status=400)
-        if not id:
-            return Response(
-                {"error": "No similar faces found"}, status=400
-            )
-        username = id.split("-")[0]
-
-        user = authenticate(username=username, password=password)
-        if not user:
-            return Response(
-                {"error": "Wrong password"}, status=400
-            )
-        else:
-            employee = Employee.objects.get(user=user)
             try:
-                attendance = AttendanceRecord.create_attendance(employee=employee)
-                return Response(
-                    {
-                        "message": f"You are now {'timed in' if attendance.attendance_type == 1 else 'timed out'} {user.first_name} {user.last_name}"
-                    },
-                    status=200,
-                )
+                embed_img = facedb.embedding_func(image)
+                # results = facedb.recognize(img=image)
+                results = facedb.check_similar(embeddings=embed_img, threshold=85)
+                if results and results[0] == False:
+                    return Response({"error": "No similar faces found"}, status=400)
+
+                id = results[0]
             except:
-                return Response({"error": "Something went wrong"}, status=400)
+                return Response({"error": "No face found on the camera."}, status=400)
+
+            username = id.split("-")[0]
+
+            user = authenticate(username=username, password=password)
+            if not user:
+                return Response({"error": "Wrong password"}, status=400)
+            else:
+                employee = Employee.objects.get(user=user)
+                try:
+                    attendance = AttendanceRecord.create_attendance(employee=employee)
+                    return Response(
+                        {
+                            "message": f"You are now {'timed in' if attendance.attendance_type == 1 else 'timed out'} {user.first_name} {user.last_name}"
+                        },
+                        status=200,
+                    )
+                except:
+                    return Response(
+                        {"error": "Something went wrong creating attendance"},
+                        status=400,
+                    )
+        except:
+            return Response({"error": "Something went wrong"}, status=400)
