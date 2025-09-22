@@ -4,3 +4,7 @@ djangorestframework-simplejwt
 facedb
 django-cors-headers
 pytz
+
+gunicorn>=21.0.0
+python-decouple>=3.8
+whitenoise>=6.5.0

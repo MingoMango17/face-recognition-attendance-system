@@ -256,39 +256,6 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
 
             if (!mountedRef.current) return;
 
-            // if (result.data.message === "no similar face found") {
-            //     setAttendanceStatus({
-            //         type: "error",
-            //         message:
-            //             "Face not recognized. Please try again or contact admin.",
-            //     });
-            // } else if (result.data.message === "invalid password") {
-            //     setAttendanceStatus({
-            //         type: "error",
-            //         message: "Invalid password. Please try again.",
-            //     });
-            //     setPasswordError("Invalid password");
-            // } else {
-            //     setAttendanceStatus({
-            //         type: "success",
-            //         message: `Attendance marked successfully! Welcome ${
-            //             result.data.employeeName || "to work"
-            //         }.`,
-            //     });
-            //     // Clear password on success
-            //     setPassword("");
-            // }
-            if (response.status === 400) {
-                setAttendanceStatus({
-                    type: "error",
-                    message: result.error,
-                });
-            } else {
-                setAttendanceStatus({
-                    type: "success",
-                    message: result.message,
-                });
-            }
         } catch (error) {
             console.log("Attendance marking error: ", error.response.data.error);
             if (mountedRef.current) {
