@@ -1434,7 +1434,7 @@ class MarkAttendanceView(APIView):
                 return Response({"error": "No face found on the camera."}, status=400)
 
             username = id.split("-")[0]
-
+            print("username", username, password)
             user = authenticate(username=username, password=password)
             if not user:
                 return Response({"error": "Wrong password"}, status=400)

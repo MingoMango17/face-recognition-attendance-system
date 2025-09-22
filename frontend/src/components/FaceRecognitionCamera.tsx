@@ -233,26 +233,17 @@ const FaceRecognitionCamera: React.FC<FaceRecognitionCameraProps> = ({
                 password: password,
             };
 
-            // const response = await fetch(
-            //     "http://127.0.0.1:8000/api/face/recognize/",
-            //     {
-            //         method: "POST",
-            //         headers: {
-            //             "Content-Type": "application/json",
-            //         },
-            //         body: JSON.stringify(requestPayload),
-            //     }
-            // );
             const response = await api.post(
                 "payroll/mark-attendance/",
                 requestPayload
             );
 
-            // if (!response.ok) {
-            //     throw new Error("Network response was not ok");
-            // }
-
             const result: AttendanceResponse = response.data;
+            
+            setAttendanceStatus({
+                type: "success",
+                message: result.message,
+            })
 
             if (!mountedRef.current) return;
 
