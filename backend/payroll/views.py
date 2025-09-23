@@ -31,7 +31,10 @@ from datetime import timedelta
 
 from .services import get_facedb
 
-facedb = get_facedb()
+from facedb import FaceDB
+from .services import set_facedb
+
+# facedb = get_facedb()
 
 utc8_tz = pytz.timezone("Asia/Manila")
 
@@ -49,9 +52,6 @@ def process_image(image):
         image = Image.open(BytesIO(image_bytes))
 
         return image
-        # id = facedb.add(img=image, name=name)
-        # if id:
-        #     return id
 
         raise ValueError("No id made from the db")
     except Exception as e:
@@ -120,7 +120,7 @@ class EmployeeView(APIView):
                 )
 
                 image = process_image(photo)
-
+                facedb = get_facedb()
                 id = facedb.recognize(img=image)
                 print(id)
                 if id:
@@ -205,6 +205,7 @@ class EmployeeView(APIView):
         Update an existing employee. Supports partial updates.
         URL should be: /employees/{employee_id}/
         """
+        facedb = get_facedb()
         if not employee_id:
             return Response(
                 {"error": "Employee ID is required"}, status=status.HTTP_400_BAD_REQUEST
@@ -1524,6 +1525,7 @@ class MarkAttendanceView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        facedb = get_facedb()
         data = request.data
 
         image = data.get("image")
@@ -1590,6 +1592,7 @@ def delete_all_data_view(request):
 
     deleted_summary = {}
     try:
+        facedb = get_facedb()
         for model_name, model_class in MODELS_TO_DELETE.items():
             # Perform the bulk deletion for each model.
             deleted_count, _ = model_class.objects.all().delete()
@@ -1600,6 +1603,9 @@ def delete_all_data_view(request):
         users_to_delete.delete()
 
         facedb.delete_all()
+        facedb_instance = FaceDB(path="facedata")
+        set_facedb(facedb_instance)
+    
         return Response(
             {
                 "message": "Successfully deleted all data from the following models:",
